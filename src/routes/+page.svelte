@@ -1,2 +1,12 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<script lang="ts">
+	import LeafGame from '$lib/components/LeafGame.svelte';
+</script>
+
+<div></div>
+<LeafGame />
+
+<style>
+	div {
+		height: 100px;
+	}
+</style>
