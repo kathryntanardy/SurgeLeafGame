@@ -1,25 +1,32 @@
 <script lang="ts">
 	import type { BucketData } from '$lib/game/bucketData';
+	import { BucketState } from '$lib/game/bucketData';
 
 	export let bucket: BucketData;
 
-	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			bucket.onClick();
-		}
-	}
+	$: isDefault = bucket.state === BucketState.Default;
+	$: isAvailable = bucket.state === BucketState.Available;
+	$: isOut = bucket.state === BucketState.OutOfStock;
+	$: imgSrc = isDefault
+		? bucket.images.default
+		: isAvailable
+			? bucket.images.available
+			: bucket.images.outOfStock;
+	$: pos = isAvailable && bucket.availablePosition ? bucket.availablePosition : bucket.position;
+	$: isBucket4 = bucket.key === 'bucket4' || bucket.id === 4;
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <img
-	src={bucket.imageSrc}
+	src={imgSrc}
 	alt={bucket.altText}
 	class="bucket"
-	style="left: {bucket.position.left}; top: {bucket.position.top}; width: {bucket.position.width};"
+	class:available={isAvailable}
+	class:default={isDefault}
+	class:out={isOut}
+	class:dim={isBucket4}
+	style="left: {pos.left}; top: {pos.top}; width: {pos.width};"
 	on:click={bucket.onClick}
-	on:keydown={handleKeydown}
-	tabindex="0"
-	role="button"
 />
 
 <style>
@@ -27,11 +34,21 @@
 		position: absolute;
 		height: auto;
 		z-index: 1;
-		cursor: pointer;
+		cursor: default;
 		transition: transform 0.2s ease;
 	}
 
-	.bucket:hover {
+	.bucket.available {
+		cursor: pointer;
+	}
+
+	/* Only available buckets get a hover effect */
+	.bucket.available:hover {
 		transform: scale(1.05);
+	}
+
+	/* Dimmed bucket variant (bucket 4) */
+	.bucket.dim {
+		opacity: 0.3;
 	}
 </style>
