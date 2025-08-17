@@ -44,9 +44,8 @@ export const bucketData: BucketData[] = [
             top: '49.13vh',
             width: '8vw'
         },
-        // example: different position when available (adjust as needed)
-        // availablePosition: { left: '26vw', top: '48vh', width: '8vw' },
-        state: BucketState.Default,
+
+        state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 1 clicked!');
         }
@@ -65,7 +64,7 @@ export const bucketData: BucketData[] = [
             top: '60.56vh',
             width: '5vw'
         },
-        state: BucketState.Default,
+        state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 2 clicked!');
         }
@@ -84,7 +83,7 @@ export const bucketData: BucketData[] = [
             top: '44.04vh',
             width: '6.5vw'
         },
-        state: BucketState.Default,
+        state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 3 clicked!');
         }
@@ -93,18 +92,16 @@ export const bucketData: BucketData[] = [
         id: 4,
         key: 'bucket4',
         images: {
-            // default will mirror available since bucket4 is never in true default state
             default: '/bucket4/available.png',
             available: '/bucket4/available.png',
             outOfStock: '/bucket4/available.png'
         },
         altText: 'Bucket 4',
         position: {
-            left: '53.33vw',  // 1024px -> 53.33vw (1024/1920*100)
-            top: '27.5vh',    // 297px  -> 27.5vh (297/1080*100)
-            width: '9.1vw'    // 174.88px -> 9.1vw (174.88/1920*100)
+            left: '55.95vw',
+            top: '49.15vh',
+            width: '4.2vw'
         },
-        // Bucket 4 starts as Available and only toggles between Available/OutOfStock
         state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 4 clicked!');
@@ -114,9 +111,9 @@ export const bucketData: BucketData[] = [
         id: 5,
         key: 'bucket5',
         images: {
-            default: '/bucket5.png',
-            available: '/bucket5.png',
-            outOfStock: '/bucket5.png'
+            default: '/bucket5/default.png',
+            available: '/bucket5/available.png',
+            outOfStock: '/bucket5/available.png'
         },
         altText: 'Bucket 5',
         position: {
@@ -124,7 +121,7 @@ export const bucketData: BucketData[] = [
             top: '60.28vh',
             width: '10vw'
         },
-        state: BucketState.Default,
+        state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 5 clicked!');
         }
@@ -133,9 +130,9 @@ export const bucketData: BucketData[] = [
         id: 6,
         key: 'bucket6',
         images: {
-            default: '/bucket6.png',
-            available: '/bucket6.png',
-            outOfStock: '/bucket6.png'
+            default: '/bucket6/default.png',
+            available: '/bucket6/available.png',
+            outOfStock: '/bucket6/available.png'
         },
         altText: 'Bucket 6',
         position: {
@@ -143,7 +140,7 @@ export const bucketData: BucketData[] = [
             top: '52.39vh',
             width: '6.5vw'
         },
-        state: BucketState.Default,
+        state: BucketState.Available,
         onClick: () => {
             console.log('Bucket 6 clicked!');
         }

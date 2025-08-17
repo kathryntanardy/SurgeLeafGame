@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { BucketData } from '$lib/game/bucketData';
 	import { BucketState } from '$lib/game/bucketData';
+	import Plant from './Plant.svelte';
+	import { plantData } from '$lib/game/plantData';
 
 	export let bucket: BucketData;
 
@@ -12,11 +14,15 @@
 		: isAvailable
 			? bucket.images.available
 			: bucket.images.outOfStock;
-	$: pos = isAvailable && bucket.availablePosition ? bucket.availablePosition : bucket.position;
-	$: isBucket4 = bucket.key === 'bucket4' || bucket.id === 4;
+	// Always use the base position
+	$: pos = bucket.position;
+
+	// find matching plant by bucket key if needed
+	$: matchingPlant = plantData.find((p) => p.key.endsWith(bucket.key.replace('bucket', '')));
+	$: isBucket5 = bucket.key === 'bucket5' || bucket.id === 5;
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- Always render the bucket image (non-clickable) -->
 <img
 	src={imgSrc}
 	alt={bucket.altText}
@@ -24,31 +30,28 @@
 	class:available={isAvailable}
 	class:default={isDefault}
 	class:out={isOut}
-	class:dim={isBucket4}
+	class:topBucket={isBucket5}
 	style="left: {pos.left}; top: {pos.top}; width: {pos.width};"
-	on:click={bucket.onClick}
+	draggable="false"
 />
 
+<!-- Render plant on top when available -->
+{#if isAvailable && matchingPlant}
+	<Plant plant={matchingPlant} />
+{/if}
+
 <style>
+	/* Common bucket styling lives here (not in data) */
 	.bucket {
+		display: block;
 		position: absolute;
 		height: auto;
-		z-index: 1;
+		z-index: 2; /* base bucket above most plants */
 		cursor: default;
-		transition: transform 0.2s ease;
 	}
 
-	.bucket.available {
-		cursor: pointer;
-	}
-
-	/* Only available buckets get a hover effect */
-	.bucket.available:hover {
-		transform: scale(1.05);
-	}
-
-	/* Dimmed bucket variant (bucket 4) */
-	.bucket.dim {
-		opacity: 0.3;
+	/* Bucket 5 above everything else */
+	.bucket.topBucket {
+		z-index: 4;
 	}
 </style>
