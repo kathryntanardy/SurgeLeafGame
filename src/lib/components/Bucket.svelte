@@ -3,6 +3,7 @@
 	import { BucketState } from '$lib/game/bucketData';
 	import Plant from './Plant.svelte';
 	import { plantData } from '$lib/game/plantData';
+	import { game } from '$lib/game/LeafGame';
 
 	export let bucket: BucketData;
 
@@ -14,12 +15,9 @@
 		: isAvailable
 			? bucket.images.available
 			: bucket.images.outOfStock;
-	// Always use the base position
-	$: pos = bucket.position;
 
-	// find matching plant by bucket key if needed
-	$: matchingPlant = plantData.find((p) => p.key.endsWith(bucket.key.replace('bucket', '')));
-	$: isBucket5 = bucket.key === 'bucket5' || bucket.id === 5;
+	$: bucketNum = Number(bucket.key.replace('bucket', ''));
+	$: matchingPlant = plantData.find((p) => p.id === bucketNum);
 </script>
 
 <!-- Always render the bucket image (non-clickable) -->
@@ -30,18 +28,21 @@
 	class:available={isAvailable}
 	class:default={isDefault}
 	class:out={isOut}
-	class:topBucket={isBucket5}
-	style="left: {pos.left}; top: {pos.top}; width: {pos.width};"
+	class:topBucket={bucket.key === 'bucket5' || bucket.id === 5}
+	style="left: {bucket.position.left}; top: {bucket.position.top}; width: {bucket.position.width}"
 	draggable="false"
 />
 
 <!-- Render plant on top when available -->
 {#if isAvailable && matchingPlant}
-	<Plant plant={matchingPlant} />
+	<Plant
+		plant={matchingPlant}
+		bind:bucketState={bucket.state}
+		on:click={() => game.plantClick(matchingPlant.key)}
+	/>
 {/if}
 
 <style>
-	/* Common bucket styling lives here (not in data) */
 	.bucket {
 		display: block;
 		position: absolute;

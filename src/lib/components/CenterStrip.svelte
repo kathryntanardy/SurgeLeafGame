@@ -1,9 +1,9 @@
 <script lang="ts">
 	import HudBox from './HudBox.svelte';
+	import { scoreStore } from '$lib/game/LeafGame';
 
 	// TODO: Add timer and score functionality, clickable shop button.
 	export let timerText: string = '00:00';
-	export let score: number = 0;
 	export let onOpenModal: () => void = () => {};
 </script>
 
@@ -19,7 +19,7 @@
 		<HudBox
 			mode="display"
 			iconSrc="/leafIcon.png"
-			value={score}
+			value={$scoreStore}
 			leftIconWidth="1.04vw"
 			leftIconHeight="1.85vh"
 		/>

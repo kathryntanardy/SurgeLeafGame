@@ -1,57 +1,55 @@
-import { itemKeys as Items } from '$lib/game/bucketData';
-
-// Local declaration to satisfy TS when using Svelte runes in class fields
-// In Svelte 5, $state returns a reactive value of the same type
-declare function $state<T>(initial: T): T;
+import { writable, get } from 'svelte/store';
+import { plantData } from '$lib/game/plantData';
 
 export type Order = Record<string, number>;
+export const scoreStore = writable(0);
+export const queuedOrdersStore = writable<Order[]>([]);
+export const currentOrderStore = writable<Order>({});
 
 export class LeafGame {
-    queuedOrders = $state<Order[]>([]);
-    currentOrder = $state<Order>({});
-    score = $state<number>(0);
-
-    someVar = 123;
-
     constructor() {
         this.addOrder();
-        setInterval(() => {
-            this.addOrder();
-        }, 10000);
+        setInterval(() => this.addOrder(), 10000);
     }
 
     addOrder(): void {
-        if (this.queuedOrders.length > 5) return;
+        const q = get(queuedOrdersStore);
+        if (q.length > 3) return;
 
+        const Items = plantData.map(p => p.key);
         const order: Order = {};
         for (let i = 0; i < 10; i++) {
             if (Math.random() > 0.5) {
-                const item = this.randItem(Items);
+                const item = Items[Math.floor(Math.random() * Items.length)];
                 order[item] = (order[item] ?? 0) + 1;
             }
         }
-        this.queuedOrders.push(order);
+        queuedOrdersStore.update(arr => [...arr, order]);
     }
 
     makeItem(item: string): void {
-        this.currentOrder[item] = (this.currentOrder[item] ?? 0) + 1;
+        currentOrderStore.update(co => ({ ...co, [item]: (co[item] ?? 0) + 1 }));
     }
 
     submitOrder(): void {
-        if (this.queuedOrders.length === 0) return;
+        const q = get(queuedOrdersStore);
+        if (q.length === 0) return;
+        const [target, ...rest] = q;
+        queuedOrdersStore.set(rest);
 
-        const target = this.queuedOrders.at(0)!;
-        this.queuedOrders.splice(0, 1);
-
-        for (const [key, val] of Object.entries(this.currentOrder)) {
-            if (key in target) {
-                this.score += Math.min(val as number, target[key]!);
-            }
+        const co = get(currentOrderStore);
+        let gained = 0;
+        for (const [key, val] of Object.entries(co)) {
+            if (key in target) gained += Math.min(val as number, target[key]!);
         }
-        this.currentOrder = {};
+        scoreStore.update(s => s + gained);
+        currentOrderStore.set({});
     }
 
-    randItem<T>(arr: T[]): T {
-        return arr[Math.floor(Math.random() * arr.length)];
+    plantClick(key: string): void {
+        const pts = plantData.find(p => p.key === key)?.points ?? 0;
+        scoreStore.update(s => s + pts);
+        this.makeItem(key);
     }
 }
+export const game = new LeafGame();
