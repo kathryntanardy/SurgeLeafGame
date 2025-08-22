@@ -1,11 +1,5 @@
 //TODO: Modify code 
 
-export enum BucketState {
-    Default = 'default',
-    Available = 'available',
-    OutOfStock = 'out_of_stock'
-}
-
 export interface BucketPosition {
     left: string;
     top: string;
@@ -25,8 +19,6 @@ export interface BucketData {
     altText: string;
     position: BucketPosition;
     availablePosition?: BucketPosition; // optional alternate position when Available
-    state: BucketState;
-    onClick: () => void;
 }
 
 export const bucketData: BucketData[] = [
@@ -43,11 +35,6 @@ export const bucketData: BucketData[] = [
             left: '25.33vw',
             top: '49.13vh',
             width: '8vw'
-        },
-
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 1 clicked!');
         }
     },
     {
@@ -63,10 +50,6 @@ export const bucketData: BucketData[] = [
             left: '35.89vw',
             top: '60.56vh',
             width: '5vw'
-        },
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 2 clicked!');
         }
     },
     {
@@ -82,10 +65,6 @@ export const bucketData: BucketData[] = [
             left: '38vw',
             top: '44.04vh',
             width: '6.5vw'
-        },
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 3 clicked!');
         }
     },
     {
@@ -101,10 +80,6 @@ export const bucketData: BucketData[] = [
             left: '55.95vw',
             top: '49.15vh',
             width: '4.2vw'
-        },
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 4 clicked!');
         }
     },
     {
@@ -120,10 +95,6 @@ export const bucketData: BucketData[] = [
             left: '58.77vw',
             top: '60.28vh',
             width: '10vw'
-        },
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 5 clicked!');
         }
     },
     {
@@ -139,10 +110,6 @@ export const bucketData: BucketData[] = [
             left: '67.23vw',
             top: '52.39vh',
             width: '6.5vw'
-        },
-        state: BucketState.Available,
-        onClick: () => {
-            console.log('Bucket 6 clicked!');
         }
     }
 ];

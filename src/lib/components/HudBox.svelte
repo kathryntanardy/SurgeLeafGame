@@ -26,13 +26,7 @@
 {#if mode === 'button'}
 	<!-- Static background box; only the inner image button is clickable -->
 	<div class="hud-box" style="background-image: url({containerSrc});">
-		<button
-			type="button"
-			class="icon-button"
-			on:click={onClick}
-			style:width={buttonWidth}
-			style:height={buttonHeight}
-		>
+		<button type="button" class="icon-button" style:width={buttonWidth} style:height={buttonHeight}>
 			<img src="/view_shop.png" alt="" class="icon" aria-hidden="true" />
 		</button>
 	</div>

@@ -1,23 +1,24 @@
 <script lang="ts">
 	import type { BucketData } from '$lib/game/bucketData';
-	import { BucketState } from '$lib/game/bucketData';
+	import { Stock } from '$lib/game/LeafGame';
 	import Plant from './Plant.svelte';
 	import { plantData } from '$lib/game/plantData';
-	import { game } from '$lib/game/LeafGame';
+	import { game, plantsStore } from '$lib/game/LeafGame';
 
 	export let bucket: BucketData;
 
-	$: isDefault = bucket.state === BucketState.Default;
-	$: isAvailable = bucket.state === BucketState.Available;
-	$: isOut = bucket.state === BucketState.OutOfStock;
+	// Plant/bucket state now driven by plantsStore (runtime)
+	$: bucketNum = Number(bucket.key.replace('bucket', ''));
+	$: matchingPlant = plantData.find((p) => p.id === bucketNum);
+	$: plantState = matchingPlant ? $plantsStore[matchingPlant.key]?.state : undefined;
+	$: isDefault = plantState === Stock.Default;
+	$: isAvailable = plantState === Stock.Available;
+	$: isOut = plantState === Stock.OutOfStock;
 	$: imgSrc = isDefault
 		? bucket.images.default
 		: isAvailable
 			? bucket.images.available
 			: bucket.images.outOfStock;
-
-	$: bucketNum = Number(bucket.key.replace('bucket', ''));
-	$: matchingPlant = plantData.find((p) => p.id === bucketNum);
 </script>
 
 <!-- Always render the bucket image (non-clickable) -->
@@ -33,11 +34,11 @@
 	draggable="false"
 />
 
-<!-- Render plant on top when available -->
-{#if isAvailable && matchingPlant}
+<!-- Render plant on top when not Default (Available or OutOfStock) -->
+{#if !isDefault && matchingPlant}
 	<Plant
 		plant={matchingPlant}
-		bind:bucketState={bucket.state}
+		bucketState={plantState ?? Stock.Default}
 		on:click={() => game.plantClick(matchingPlant.key)}
 	/>
 {/if}

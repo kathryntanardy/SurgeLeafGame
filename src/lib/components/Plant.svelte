@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { BucketState } from '$lib/game/bucketData';
+	import { Stock } from '$lib/game/LeafGame';
 	export let plant;
-	export let bucketState: BucketState;
+	export let bucketState: Stock;
 	const dispatch = createEventDispatcher();
-	$: isAvailable = bucketState === BucketState.Available;
-	$: isOut = bucketState === BucketState.OutOfStock;
+	$: isAvailable = bucketState === Stock.Available;
+	$: isOut = bucketState === Stock.OutOfStock;
 </script>
 
 <img
