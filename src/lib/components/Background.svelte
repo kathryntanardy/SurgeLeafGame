@@ -3,7 +3,16 @@
 	import CenterStrip from './CenterStrip.svelte';
 	import { bucketData } from '$lib/game/bucketData';
 	import Customer from '$lib/components/Customer.svelte';
-	import { OrderStatus, orderEntities, game, displaySlots } from '$lib/game/LeafGame';
+	import ShopModal from '$lib/components/ShopModal.svelte';
+	import { OrderStatus, orderEntities, game, displaySlots, plantsStore } from '$lib/game/LeafGame';
+
+	let shopOpen: boolean = false;
+	function onOpenModal() {
+		shopOpen = true;
+	}
+	function onCloseModal() {
+		shopOpen = false;
+	}
 
 	const toText = (ent: { requestedPlants: Record<string, number> }) =>
 		Object.entries(ent.requestedPlants)
@@ -16,8 +25,6 @@
 
 <div class="background">
 	<img src="/background.png" alt="Background" class="background-image" />
-
-	<CenterStrip />
 
 	{#each bucketData as bucket (bucket.id)}
 		<Bucket {bucket} />
@@ -43,6 +50,13 @@
 	{/each}
 
 	<img src="/placeholder_mascot.png" alt="Mascot" class="mascot" />
+
+	<!-- Center HUD strip (timer, score, view shop) -->
+	<CenterStrip {onOpenModal} />
+
+	{#if shopOpen}
+		<ShopModal {plantsStore} {game} on:close={onCloseModal} />
+	{/if}
 </div>
 
 <style>
@@ -68,8 +82,8 @@
 	}
 
 	/* All position and dimensions is converted assuming screen width 
-    of 1920px and 1080px 
-    with manual adjustments*/
+   of 1920px and 1080px 
+   with manual adjustments*/
 
 	/* Mascot styles */
 	.mascot {

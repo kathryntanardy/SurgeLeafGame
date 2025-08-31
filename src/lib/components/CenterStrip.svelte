@@ -4,7 +4,7 @@
 
 	// TODO: Add timer and score functionality, clickable shop button.
 	export let timerText: string = '00:00';
-	export let onOpenModal: () => void = () => {};
+	export let onOpenModal;
 </script>
 
 <div class="center-strip">

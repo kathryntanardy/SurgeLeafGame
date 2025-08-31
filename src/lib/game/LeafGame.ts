@@ -39,6 +39,8 @@ export const displaySlots = writable<(number | null)[]>([null, null, null]);
 // Temp store for selected plant for delivery
 export const tempSelectedPlant = writable<string | null>(null); // pending plant key
 
+// (QTE removed)
+
 // State for plant information during runtime
 export type plantInfo = {
     id: number;
@@ -46,6 +48,7 @@ export type plantInfo = {
     points: number;
     bucketKey: string;
     state: Stock;
+    stockCount: number; // remaining deliveries before OutOfStock (0 when not Available)
 };
 
 // Initial Stocks definitions
@@ -65,7 +68,7 @@ export const plantArray = writable<Record<string, plantInfo>>(
             const initialState = INITIAL_STATES[bucketKey] ?? Stock.Available;
             return [
                 p.key,
-                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState }
+                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 1 : 0 }
             ];
         })
     )
@@ -87,7 +90,7 @@ export class LeafGame {
         this.addOrder();
         setInterval(() => {
             this.addOrder();
-        }, 10000);
+        }, 3000);
     }
 
     addOrder(): void {
@@ -116,7 +119,7 @@ export class LeafGame {
             status: OrderStatus.InProgress,
         };
 
-
+        // Register entity and place into the free slot
         orderEntities.update((m) => ({ ...m, [id]: entity }));
         displaySlots.update((s) => {
             const next = [...s];
@@ -153,6 +156,8 @@ export class LeafGame {
         tempSelectedPlant.set(key);
     }
 
+    // (QTE removed)
+
     // Customer Click: deliver selected plant to a specific order
     deliverPlant(orderId: number): void {
         const key = get(tempSelectedPlant);
@@ -182,9 +187,12 @@ export class LeafGame {
                 deliveredPlants: newDelivered,
             };
 
-            // Adjust score
+            // Adjust score (QTE removed)
             scoreStore.update((s) => s + plant.points);
-            plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.OutOfStock } }));
+            // Decrement stock; if reaches 0, mark OutOfStock, else keep Available
+            const nextCount = Math.max(0, (plant.stockCount ?? 0) - 1);
+            const nextState = nextCount === 0 ? Stock.OutOfStock : Stock.Available;
+            plantArray.update((m) => ({ ...m, [key]: { ...plant, state: nextState, stockCount: nextCount } }));
             tempSelectedPlant.set(null);
 
             // If no more requested items, mark success and remove after 5s
@@ -217,14 +225,7 @@ export class LeafGame {
     restockPlant(key: string): void {
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
-        // Plant 4 (Staff Stick) is free to restock
-        if (plant.id !== 4) {
-            const cost = plant.points;
-            const currentScore = get(scoreStore);
-            if (currentScore < cost) return;
-            scoreStore.update((s) => s - cost);
-        }
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10 } }));
     }
 
     // Unlock: Default -> Available, cost = plant.points (plant 4 free)
@@ -238,7 +239,7 @@ export class LeafGame {
             if (currentScore < cost) return;
             scoreStore.update((s) => s - cost);
         }
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10 } }));
         // Track unlocked key for future order generation
         if (!this.unlockedKeys.includes(key)) this.unlockedKeys.push(key);
     }

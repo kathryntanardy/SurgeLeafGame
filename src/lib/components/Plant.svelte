@@ -1,7 +1,12 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Stock } from '$lib/game/LeafGame';
-	export let plant;
+	import { Stock, game } from '$lib/game/LeafGame';
+	type PlantMeta = {
+		key: string;
+		imageSrc: string;
+		position: { left: string; top: string; width: string };
+	};
+	export let plant: PlantMeta;
 	export let bucketState: Stock;
 	const dispatch = createEventDispatcher();
 	$: isAvailable = bucketState === Stock.Available;
