@@ -68,7 +68,7 @@ export const plantArray = writable<Record<string, plantInfo>>(
             const initialState = INITIAL_STATES[bucketKey] ?? Stock.Available;
             return [
                 p.key,
-                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 1 : 0 }
+                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0 }
             ];
         })
     )
