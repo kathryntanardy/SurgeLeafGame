@@ -78,9 +78,16 @@ export const plantArray = writable<Record<string, plantInfo>>(
 export type PlantRuntime = plantInfo;
 export const plantsStore = plantArray;
 
+// Mascot: frame state for Background rendering
+export type MascotFrame = 'default1' | 'default2' | 'success';
+export const mascotFrame = writable<MascotFrame>('default1');
+
 export class LeafGame {
     private orderSeq: number = 1;
     private unlockedKeys: string[] = [];
+    // Mascot internals
+    private mascotTimerId: number | undefined = undefined;
+    private mascotSuccessTimeoutId: number | undefined = undefined;
 
     constructor() {
         // Initialize unlocked keys from plants that are currently Available
@@ -91,6 +98,9 @@ export class LeafGame {
         setInterval(() => {
             this.addOrder();
         }, 3000);
+
+        // Start mascot idle animation (toggle frames while not in success)
+        this.startMascotIdle();
     }
 
     addOrder(): void {
@@ -126,6 +136,37 @@ export class LeafGame {
             next[freeIdx] = id;
             return next;
         });
+    }
+
+    // Mascot API
+    private startMascotIdle(): void {
+        if (this.mascotTimerId) return;
+        this.mascotTimerId = (setInterval(() => {
+            let current: MascotFrame = get(mascotFrame);
+            if (current === 'success') return; // don't toggle while celebrating
+            mascotFrame.set(current === 'default1' ? 'default2' : 'default1');
+        }, 700) as unknown) as number; // ~0.7s feels natural
+    }
+
+    private stopMascotIdle(): void {
+        if (this.mascotTimerId) {
+            clearInterval(this.mascotTimerId);
+            this.mascotTimerId = undefined;
+        }
+    }
+
+    private showMascotSuccessFor(ms: number = 2000): void {
+        // Clear any previous success timeout
+        if (this.mascotSuccessTimeoutId) {
+            clearTimeout(this.mascotSuccessTimeoutId);
+            this.mascotSuccessTimeoutId = undefined;
+        }
+        mascotFrame.set('success');
+        // After a short celebration, return to default and idle continues
+        this.mascotSuccessTimeoutId = (setTimeout(() => {
+            mascotFrame.set('default1');
+            this.mascotSuccessTimeoutId = undefined;
+        }, ms) as unknown) as number;
     }
 
     makeItem(item: string): void {
@@ -198,6 +239,8 @@ export class LeafGame {
             // If no more requested items, mark success and remove after 5s
             if (Object.keys(newRequested).length === 0) {
                 updated.status = OrderStatus.Success;
+                // Trigger mascot celebration briefly
+                this.showMascotSuccessFor(2000);
                 // schedule removal and clear slot
                 setTimeout(() => {
                     // remove from entities

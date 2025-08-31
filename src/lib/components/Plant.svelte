@@ -28,6 +28,7 @@
 		position: absolute;
 		display: block;
 		height: auto;
+		z-index: 3; /* above customers (z-index:1) and buckets (z-index:2) */
 		cursor: pointer;
 		transition:
 			transform 0.15s ease,

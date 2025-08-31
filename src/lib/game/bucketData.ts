@@ -47,7 +47,7 @@ export const bucketData: BucketData[] = [
         },
         altText: 'Bucket 2',
         position: {
-            left: '35.89vw',
+            left: '37.5vw',
             top: '60.56vh',
             width: '5vw'
         }
@@ -62,7 +62,7 @@ export const bucketData: BucketData[] = [
         },
         altText: 'Bucket 3',
         position: {
-            left: '38vw',
+            left: '39.2vw',
             top: '44.04vh',
             width: '6.5vw'
         }

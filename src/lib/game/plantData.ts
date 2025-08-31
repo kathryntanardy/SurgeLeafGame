@@ -16,7 +16,7 @@ export const plantData = [
         imageSrc: '/bucket2/plant.png',
         altText: 'River Vine',
         // 314px -> 16.35vw, 442px -> 40.93vh, 1052px -> 54.79vw (user adjusted top to 43.93vh)
-        position: { left: '16.46vw', top: '43.93vh', width: '54.79vw' },
+        position: { left: '18.46vw', top: '43.93vh', width: '54.79vw' },
         points: 3000,
     },
     {
@@ -24,7 +24,7 @@ export const plantData = [
         key: 'plant3',
         imageSrc: '/bucket3/plant.png',
         altText: 'Tomato',
-        position: { left: '37.55vw', top: '8.80vh', width: '6.58vw' },
+        position: { left: '38.75vw', top: '8.80vh', width: '6.58vw' },
         points: 20,
     },
     {

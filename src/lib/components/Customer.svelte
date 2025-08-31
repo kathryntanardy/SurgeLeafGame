@@ -24,9 +24,11 @@
 
 	// Order text (simple, text-only for now)
 	export let orderText: string = 'worm x2, tomato x1';
+	// Optional: rich items to render icons instead of text
+	export let orderItems: Record<string, number> | undefined = undefined;
 
 	// Gap between bottom of order and top of customer
-	export let orderGapY: string = '3vh';
+	export let orderGapY: string = '1vh';
 
 	// Measured order height from child via bind
 	let measuredOrderHeight = 0;
@@ -47,14 +49,47 @@
 
 	// Always use static images from /customer/* based on state, fallback to imageSrc
 	$: resolvedSrc = defaultMap[state] ?? imageSrc;
+
+	// Icon mapping for order items
+	const iconByKey: Record<string, string> = {
+		plant1: '/icons/monstera.png',
+		plant2: '/icons/vine.png',
+		plant3: '/icons/tomato.png',
+		plant4: '/icons/stick.png',
+		plant5: '/icons/carrot.png',
+		plant6: '/icons/dandelion.png'
+	};
 </script>
 
-<!-- Order bubble/card above the customer, centered horizontally over the image -->
-<Order left={orderLeft} top={orderTop} bind:height={measuredOrderHeight}>
-	{orderText}
-</Order>
+<!-- Order bubble/card above the customer, hidden when Success -->
+{#if state !== OrderStatus.Success}
+	<Order left={orderLeft} top={orderTop} bind:height={measuredOrderHeight}>
+		{#if orderItems}
+			<div class="order-icons">
+				{#each Object.entries(orderItems) as [k, qty]}
+					<div class="order-icon-item">
+						<img src={iconByKey[k]} alt={k} class="order-icon" draggable="false" />
+						<span class="order-qty">x{qty}</span>
+					</div>
+				{/each}
+			</div>
+		{:else}
+			{orderText}
+		{/if}
+	</Order>
+{/if}
 
-<div class="customer" style:left style:top on:click={() => dispatch('click')}>
+<!-- Invisible hitbox above plants to keep customer clickable -->
+<div
+	class="customer-hit"
+	style:left
+	style:top
+	style:width={imageWidth}
+	style:height={imageHeight}
+	on:click={() => dispatch('click')}
+></div>
+
+<div class="customer" style:left style:top>
 	<img
 		src={resolvedSrc}
 		{alt}
@@ -70,6 +105,12 @@
 	.customer {
 		position: absolute;
 		display: block;
+		z-index: 1; /* below plants */
+	}
+	.customer-hit {
+		position: absolute;
+		z-index: 5; /* above plants */
+		background: transparent;
 	}
 	.customer-img {
 		display: block;
@@ -78,5 +119,30 @@
 	.customer-img.mirrored {
 		transform: scaleX(-1);
 		transform-origin: center;
+	}
+	.order-icons {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 6px;
+		align-items: center;
+		justify-content: center;
+		/* 35px ~= 1.8229166667vw (on 1920w) ~= 3.2407407407vh (on 1080h) */
+		--iconSize: min(1.8229166667vw, 3.2407407407vh);
+	}
+	.order-icon-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		min-height: var(--iconSize);
+	}
+	.order-icon {
+		width: var(--iconSize);
+		height: auto;
+		object-fit: contain;
+		display: block;
+	}
+	.order-qty {
+		color: #8a6f6a;
+		line-height: 1;
 	}
 </style>

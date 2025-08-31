@@ -4,7 +4,14 @@
 	import { bucketData } from '$lib/game/bucketData';
 	import Customer from '$lib/components/Customer.svelte';
 	import ShopModal from '$lib/components/ShopModal.svelte';
-	import { OrderStatus, orderEntities, game, displaySlots, plantsStore } from '$lib/game/LeafGame';
+	import {
+		OrderStatus,
+		orderEntities,
+		game,
+		displaySlots,
+		plantsStore,
+		mascotFrame
+	} from '$lib/game/LeafGame';
 
 	let shopOpen: boolean = false;
 	function onOpenModal() {
@@ -19,7 +26,7 @@
 			.map(([k, qty]) => `${k} x${qty}`)
 			.join(', ');
 
-	const leftFor = (i: number) => (i === 0 ? '31.8vw' : i === 1 ? '48.28vw' : '61.98vw');
+	const leftFor = (i: number) => (i === 0 ? '31.8vw' : i === 1 ? '46.78vw' : '60.48vw');
 	const topFor = (i: number) => (i === 0 ? '20.34vh' : i === 1 ? '17.76vh' : '19.33vh');
 </script>
 
@@ -38,6 +45,7 @@
 				<Customer
 					state={ent.status as OrderStatus}
 					orderText={toText(ent)}
+					orderItems={ent.requestedPlants}
 					left={leftFor(i)}
 					top={topFor(i)}
 					imageWidth="7.71vw"
@@ -49,7 +57,13 @@
 		{/if}
 	{/each}
 
-	<img src="/placeholder_mascot.png" alt="Mascot" class="mascot" />
+	{#if $mascotFrame === 'success'}
+		<img src="/mascot/success.png" alt="Mascot" class="mascot" />
+	{:else if $mascotFrame === 'default2'}
+		<img src="/mascot/default_frame2.png" alt="Mascot" class="mascot" />
+	{:else}
+		<img src="/mascot/default_frame1.png" alt="Mascot" class="mascot" />
+	{/if}
 
 	<!-- Center HUD strip (timer, score, view shop) -->
 	<CenterStrip {onOpenModal} />
