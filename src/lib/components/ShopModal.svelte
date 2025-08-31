@@ -5,7 +5,6 @@
 
 	export let plantsStore: Writable<Record<string, { key: string; state: Stock; points: number }>>;
 	export let game: any;
-	export let title: string = 'Shop';
 
 	// Map plant keys to filenames inside shop_restock/ and shop_unlock/
 	const fileByKey: Record<string, string> = {
