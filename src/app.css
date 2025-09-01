@@ -1,3 +1,22 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+
+:root {
+	--header: #F1ECEB;
+    --special: #A7928E;
+    --primary: #d0a79d;
+    --border: #91837c;
+    --border2: #5d4e4b;
+    --bg: #231f1f;
+    --bg-trans: #231f1f76;
+    --bg2: #151311;
+
+	--red: #ea6962;
+    --orange: #e78a4e;
+    --yellow: #d8a657;
+    --green: #a9b665;
+    --aqua: #7daea3;
+    --purple: #d3869b;
+}
