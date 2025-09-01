@@ -10,7 +10,9 @@
 		game,
 		displaySlots,
 		plantsStore,
-		mascotFrame
+		mascotFrame,
+		nowStore,
+		ORDER_DEFAULT_DURATION_MS
 	} from '$lib/game/LeafGame';
 
 	let shopOpen: boolean = false;
@@ -28,6 +30,28 @@
 
 	const leftFor = (i: number) => (i === 0 ? '31.8vw' : i === 1 ? '46.78vw' : '60.48vw');
 	const topFor = (i: number) => (i === 0 ? '20.34vh' : i === 1 ? '17.76vh' : '19.33vh');
+
+	// Compute a dynamic vertical gap for the order bubble based on remaining TYPES (icons)
+	// Fewer types remaining -> bubble closer to customer
+	const orderGapFor = (ent: {
+		requestedPlants: Record<string, number>;
+		deliveredPlants: Record<string, number>;
+	}) => {
+		const typesRemaining = Object.keys(ent.requestedPlants ?? {}).length;
+		const maxGapVh = 1.2; // when many types remain
+		const minGapVh = 0.1; // when only one type remains
+		if (typesRemaining <= 1) return `${minGapVh}vh`;
+		if (typesRemaining === 2) return `${(maxGapVh + minGapVh) / 2}vh`;
+		return `${maxGapVh}vh`;
+	};
+
+	// Compute a 0..1 ratio of remaining time for timer UI
+	const timerRatioFor = (ent: { expiresAtMs?: number; totalDurationMs?: number }) => {
+		const total = ent.totalDurationMs ?? ORDER_DEFAULT_DURATION_MS;
+		if (!ent.expiresAtMs || !total) return undefined;
+		const msLeft = Math.max(0, ent.expiresAtMs - $nowStore);
+		return msLeft / total;
+	};
 </script>
 
 <div class="background">
@@ -46,6 +70,9 @@
 					state={ent.status as OrderStatus}
 					orderText={toText(ent)}
 					orderItems={ent.requestedPlants}
+					orderGapY={orderGapFor(ent)}
+					timerRatio={timerRatioFor(ent)}
+					hurry={ent.hurry}
 					left={leftFor(i)}
 					top={topFor(i)}
 					imageWidth="7.71vw"
@@ -59,6 +86,8 @@
 
 	{#if $mascotFrame === 'success'}
 		<img src="/mascot/success.png" alt="Mascot" class="mascot" />
+	{:else if $mascotFrame === 'failure'}
+		<img src="/mascot/failure.png" alt="Mascot" class="mascot" />
 	{:else if $mascotFrame === 'default2'}
 		<img src="/mascot/default_frame2.png" alt="Mascot" class="mascot" />
 	{:else}

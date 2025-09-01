@@ -28,6 +28,11 @@ export type OrderEntity = {
     deliveredPlants: Order;     // delivered so far
     status: OrderStatus;        // in_progress | success | fail
     reward?: number;            // optional completion reward
+    // Timer-related (optional, enabled when ENABLE_ORDER_TIMERS)
+    createdAtMs?: number;
+    expiresAtMs?: number;
+    totalDurationMs?: number;
+    hurry?: boolean;
 };
 
 export type OrderEntities = Record<number, OrderEntity>;
@@ -79,8 +84,24 @@ export type PlantRuntime = plantInfo;
 export const plantsStore = plantArray;
 
 // Mascot: frame state for Background rendering
-export type MascotFrame = 'default1' | 'default2' | 'success';
+export type MascotFrame = 'default1' | 'default2' | 'success' | 'failure';
 export const mascotFrame = writable<MascotFrame>('default1');
+// Global time source used for countdowns when timers are enabled
+export const nowStore = writable<number>(Date.now());
+
+// ---- Tunable gameplay timing values ----
+// to control how often timer bars is updated (10 updates/sec)
+export const NOW_TICK_MS = 100;
+// Default duration for an order before it fails (not yet wired into logic)
+export const ORDER_DEFAULT_DURATION_MS = 10_000;
+// Threshold ratio at which a customer begins showing an unhappy face (e.g. 0.25 = last 25%)
+export const ORDER_HURRY_THRESHOLD_RATIO = 0.25;
+// How long a customer (success or failure) should remain before being removed
+export const CUSTOMER_REMAIN_IN_SCREEN = 5_000;
+// How long the mascot should celebrate success before returning to idle
+export const MASCOT_SUCCESS_MS = 3_000;
+// How long the mascot should show failure after an order fails
+export const MASCOT_FAILURE_MS = 2_000;
 
 export class LeafGame {
     private orderSeq: number = 1;
@@ -88,6 +109,8 @@ export class LeafGame {
     // Mascot internals
     private mascotTimerId: number | undefined = undefined;
     private mascotSuccessTimeoutId: number | undefined = undefined;
+    // Timer ticker
+    private nowTimerId: number | undefined = undefined;
 
     constructor() {
         // Initialize unlocked keys from plants that are currently Available
@@ -98,6 +121,14 @@ export class LeafGame {
         setInterval(() => {
             this.addOrder();
         }, 3000);
+
+        // Start global time ticker for order timers
+        if (!this.nowTimerId) {
+            this.nowTimerId = (setInterval(() => {
+                nowStore.set(Date.now());
+                this.updateTimers();
+            }, NOW_TICK_MS) as unknown) as number;
+        }
 
         // Start mascot idle animation (toggle frames while not in success)
         this.startMascotIdle();
@@ -129,6 +160,14 @@ export class LeafGame {
             status: OrderStatus.InProgress,
         };
 
+        // Initialize timer fields
+        const created = Date.now();
+        const totalDuration = ORDER_DEFAULT_DURATION_MS;
+        entity.createdAtMs = created;
+        entity.totalDurationMs = totalDuration;
+        entity.expiresAtMs = created + totalDuration;
+        entity.hurry = false;
+
         // Register entity and place into the free slot
         orderEntities.update((m) => ({ ...m, [id]: entity }));
         displaySlots.update((s) => {
@@ -143,7 +182,7 @@ export class LeafGame {
         if (this.mascotTimerId) return;
         this.mascotTimerId = (setInterval(() => {
             let current: MascotFrame = get(mascotFrame);
-            if (current === 'success') return; // don't toggle while celebrating
+            if (current === 'success' || current === 'failure') return; // don't toggle while reacting
             mascotFrame.set(current === 'default1' ? 'default2' : 'default1');
         }, 700) as unknown) as number; // ~0.7s feels natural
     }
@@ -155,7 +194,68 @@ export class LeafGame {
         }
     }
 
-    private showMascotSuccessFor(ms: number = 2000): void {
+    private stopNowTicker(): void {
+        if (this.nowTimerId) {
+            clearInterval(this.nowTimerId);
+            this.nowTimerId = undefined;
+        }
+    }
+
+    // Order timers: update by remaining time
+    private updateTimers(): void {
+
+        const now = get(nowStore);
+        const toScheduleRemoval: number[] = [];
+
+        orderEntities.update((all) => {
+            const next: OrderEntities = { ...all };
+            for (const [idStr, order] of Object.entries(all)) {
+                const id = Number(idStr);
+                if (!order) continue;
+                if (order.status !== OrderStatus.InProgress) continue;
+                if (order.expiresAtMs == null || order.totalDurationMs == null) continue;
+
+                const msLeft = order.expiresAtMs - now;
+                if (msLeft <= 0) {
+                    // Queue removal: don't change the list while looping, show briefly, remove once
+                    next[id] = { ...order, status: OrderStatus.Fail } as OrderEntity;
+                    toScheduleRemoval.push(id);
+                    // Show mascot failure
+                    this.showMascotFailureFor();
+                    continue;
+                }
+
+                // Enter hurry state near the end
+                const threshold = order.totalDurationMs * ORDER_HURRY_THRESHOLD_RATIO;
+                if (!order.hurry && msLeft <= threshold) {
+                    next[id] = { ...order, hurry: true } as OrderEntity;
+                }
+            }
+            return next;
+        });
+
+        // Schedule removals for orders that just failed this tick
+        for (const orderId of toScheduleRemoval) {
+            setTimeout(() => {
+                // remove from entities
+                orderEntities.update((inner) => {
+                    const copy = { ...inner } as OrderEntities;
+                    delete copy[orderId];
+                    return copy;
+                });
+                // clear the slot that held this order
+                displaySlots.update((slots) => {
+                    const idx = slots.indexOf(orderId);
+                    if (idx === -1) return slots;
+                    const next = [...slots];
+                    next[idx] = null;
+                    return next;
+                });
+            }, CUSTOMER_REMAIN_IN_SCREEN);
+        }
+    }
+
+    private showMascotSuccessFor(ms: number = MASCOT_SUCCESS_MS): void {
         // Clear any previous success timeout
         if (this.mascotSuccessTimeoutId) {
             clearTimeout(this.mascotSuccessTimeoutId);
@@ -163,6 +263,18 @@ export class LeafGame {
         }
         mascotFrame.set('success');
         // After a short celebration, return to default and idle continues
+        this.mascotSuccessTimeoutId = (setTimeout(() => {
+            mascotFrame.set('default1');
+            this.mascotSuccessTimeoutId = undefined;
+        }, ms) as unknown) as number;
+    }
+
+    private showMascotFailureFor(ms: number = MASCOT_FAILURE_MS): void {
+        if (this.mascotSuccessTimeoutId) {
+            clearTimeout(this.mascotSuccessTimeoutId);
+            this.mascotSuccessTimeoutId = undefined;
+        }
+        mascotFrame.set('failure');
         this.mascotSuccessTimeoutId = (setTimeout(() => {
             mascotFrame.set('default1');
             this.mascotSuccessTimeoutId = undefined;
@@ -240,7 +352,7 @@ export class LeafGame {
             if (Object.keys(newRequested).length === 0) {
                 updated.status = OrderStatus.Success;
                 // Trigger mascot celebration briefly
-                this.showMascotSuccessFor(2000);
+                this.showMascotSuccessFor();
                 // schedule removal and clear slot
                 setTimeout(() => {
                     // remove from entities
@@ -257,7 +369,7 @@ export class LeafGame {
                         next[idx] = null;
                         return next;
                     });
-                }, 5000);
+                }, CUSTOMER_REMAIN_IN_SCREEN);
             }
 
             return { ...all, [orderId]: updated } as OrderEntities;

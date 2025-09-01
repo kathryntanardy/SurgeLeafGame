@@ -21,6 +21,9 @@
 
 	// Current visual state
 	export let state: OrderStatus = OrderStatus.InProgress;
+	// Optional timer/hurry indicators
+	export let timerRatio: number | undefined = undefined; // 1..0 remaining
+	export let hurry: boolean | undefined = undefined;
 
 	// Order text (simple, text-only for now)
 	export let orderText: string = 'worm x2, tomato x1';
@@ -30,12 +33,10 @@
 	// Gap between bottom of order and top of customer
 	export let orderGapY: string = '1vh';
 
-	// Measured order height from child via bind
-	let measuredOrderHeight = 0;
-
-	// Compute order top such that: bottom(order) = top(customer) - orderGapY
-	// => top(order) = top(customer) - measuredOrderHeight - orderGapY
-	$: orderTop = top ? `calc(${top} - ${measuredOrderHeight}px - ${orderGapY})` : undefined;
+	// Anchor order bubble to customer using translate, so it shrinks from top to bottom
+	// We place the order at customer top and translate upward by gap
+	const translateY = `calc(-100% - ${orderGapY})`;
+	$: orderTop = top; // top is the customer's top; translation handles the gap
 
 	// Center order horizontally over the customer: left + (imageWidth/2) - (orderWidth/2)
 	// Order has fixed width 88px, so subtract 44px
@@ -47,8 +48,11 @@
 		[OrderStatus.Fail]: '/customer/failure.png'
 	};
 
-	// Always use static images from /customer/* based on state, fallback to imageSrc
-	$: resolvedSrc = defaultMap[state] ?? imageSrc;
+	// Use unhappy face pre-emptively when hurrying
+	$: resolvedSrc =
+		state === OrderStatus.InProgress && hurry
+			? '/customer/failure.png'
+			: (defaultMap[state] ?? imageSrc);
 
 	// Icon mapping for order items
 	const iconByKey: Record<string, string> = {
@@ -61,9 +65,9 @@
 	};
 </script>
 
-<!-- Order bubble/card above the customer, hidden when Success -->
-{#if state !== OrderStatus.Success}
-	<Order left={orderLeft} top={orderTop} bind:height={measuredOrderHeight}>
+<!-- Order bubble/card is visible only while InProgress -->
+{#if state === OrderStatus.InProgress}
+	<Order left={orderLeft} top={orderTop} {translateY} progress={timerRatio}>
 		{#if orderItems}
 			<div class="order-icons">
 				{#each Object.entries(orderItems) as [k, qty]}
@@ -137,7 +141,7 @@
 	}
 	.order-icon {
 		width: var(--iconSize);
-		height: auto;
+		height: var(--iconSize);
 		object-fit: contain;
 		display: block;
 	}
