@@ -87,7 +87,7 @@
 <style>
 	/* Fullscreen backdrop */
 	.backdrop {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
 		z-index: 100;
@@ -95,7 +95,7 @@
 
 	/* Root centers the dialog above the backdrop */
 	.dialog-root {
-		position: fixed;
+		position: absolute;
 		inset: 0;
 		display: grid;
 		justify-items: center;
@@ -106,10 +106,8 @@
 
 	/* Dialog panel: 600px x 650px → vw/vh */
 	.dialog {
-		width: 29.9vw; /* match CenterStrip total width: 3*9.43vw + 2*0.8vw */
-		height: 60.1851851852vh; /* 650 / 1080 */
-		max-width: 90vw;
-		max-height: 90vh;
+		width: 29.9%; /* match CenterStrip total width: 3*9.43vw + 2*0.8vw */
+		height: 80.1%; /* 650 / 1080 */
 		background:
 			url('/modal_bg.png') center / cover no-repeat,
 			#0f1c1b;

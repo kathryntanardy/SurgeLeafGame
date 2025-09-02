@@ -14,14 +14,14 @@
 			iconSrc="/timeIcon.png"
 			value={timerText}
 			leftIconWidth="1.04vw"
-			leftIconHeight="1.85vh"
+			leftIconHeight="calc(1.85 * 100vw * 8 / 19 / 100)"
 		/>
 		<HudBox
 			mode="display"
 			iconSrc="/leafIcon.png"
 			value={$scoreStore}
 			leftIconWidth="1.04vw"
-			leftIconHeight="1.85vh"
+			leftIconHeight="calc(1.85 * 100vw * 8 / 19 / 100)"
 		/>
 		<HudBox mode="button" onClick={onOpenModal} />
 	</div>

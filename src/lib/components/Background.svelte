@@ -28,8 +28,8 @@
 			.map(([k, qty]) => `${k} x${qty}`)
 			.join(', ');
 
-	const leftFor = (i: number) => (i === 0 ? '31.8vw' : i === 1 ? '46.78vw' : '60.48vw');
-	const topFor = (i: number) => (i === 0 ? '20.34vh' : i === 1 ? '17.76vh' : '19.33vh');
+	const leftFor = (i: number) => (i === 0 ? '32%' : i === 1 ? '47%' : '60%');
+	const topFor = (i: number) => (i === 0 ? '25%' : i === 1 ? '22%' : '25%');
 
 	// Compute a dynamic vertical gap for the order bubble based on remaining TYPES (icons)
 	// Fewer types remaining -> bubble closer to customer
@@ -75,8 +75,6 @@
 					hurry={ent.hurry}
 					left={leftFor(i)}
 					top={topFor(i)}
-					imageWidth="7.71vw"
-					imageHeight="16.67vh"
 					mirror={i === 0}
 					on:click={() => game.deliverPlant(ent.id)}
 				/>
@@ -131,9 +129,9 @@
 	/* Mascot styles */
 	.mascot {
 		position: absolute;
-		left: 43.9vw;
-		top: 31.85vh;
-		width: 12.2vw;
+		left: 44%;
+		top: 40%;
+		width: 12%;
 		height: auto;
 		z-index: 1;
 	}

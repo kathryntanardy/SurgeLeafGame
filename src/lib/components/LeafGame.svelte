@@ -12,10 +12,13 @@
 	}
 
 	#leafGame {
-		height: var(--leafGameHeight);
-		border: 1px solid;
+		/* Scale height with width; keep within viewport */
 		width: calc(100vw - 2px);
-		overflow-x: hidden;
+		aspect-ratio: 19 / 8;
+		height: auto;
+		max-height: 100vh;
+		border: 1px solid;
+		overflow: visible;
 		background: #1b3534;
 	}
 </style>

@@ -9,8 +9,7 @@
 	export let alt: string = 'Customer';
 
 	// Size (viewport-relative preferred)
-	export let imageWidth: string = '12vw';
-	export let imageHeight: string | undefined = 'auto';
+	export let imageWidth: string = '8%';
 
 	// Absolute positioning within parent
 	export let left: string | undefined = undefined;
@@ -30,8 +29,8 @@
 	// Optional: rich items to render icons instead of text
 	export let orderItems: Record<string, number> | undefined = undefined;
 
-	// Gap between bottom of order and top of customer
-	export let orderGapY: string = '1vh';
+	// Gap between bottom of order and top of customer (use vw only; 1vh ≈ 0.5625vw at 16:9)
+	export let orderGapY: string = '5%';
 
 	// Anchor order bubble to customer using translate, so it shrinks from top to bottom
 	// We place the order at customer top and translate upward by gap
@@ -39,8 +38,8 @@
 	$: orderTop = top; // top is the customer's top; translation handles the gap
 
 	// Center order horizontally over the customer: left + (imageWidth/2) - (orderWidth/2)
-	// Order has fixed width 88px, so subtract 44px
-	$: orderLeft = left && imageWidth ? `calc(${left} + (${imageWidth}) / 2 - 44px)` : left;
+	// Order width uses responsive 4.5833vw (~88px @1920)
+	$: orderLeft = left && imageWidth ? `calc(${left} + (${imageWidth}) / 2 - 2.2916666667vw)` : left;
 
 	const defaultMap: Record<OrderStatus, string> = {
 		[OrderStatus.InProgress]: '/customer/default.png',
@@ -89,18 +88,17 @@
 	style:left
 	style:top
 	style:width={imageWidth}
-	style:height={imageHeight}
+	style:height={imageWidth}
 	on:click={() => dispatch('click')}
 ></div>
 
-<div class="customer" style:left style:top>
+<div class="customer" style:left style:top style:width={imageWidth} on:click={() => dispatch('click')}>
 	<img
 		src={resolvedSrc}
 		{alt}
 		class="customer-img"
 		class:mirrored={mirror}
-		style:width={imageWidth}
-		style:height={imageHeight}
+		style:width="100%"
 		draggable="false"
 	/>
 </div>
@@ -130,8 +128,8 @@
 		gap: 4px 6px;
 		align-items: center;
 		justify-content: center;
-		/* 35px ~= 1.8229166667vw (on 1920w) ~= 3.2407407407vh (on 1080h) */
-		--iconSize: min(1.8229166667vw, 3.2407407407vh);
+		/* Use vw only: 35px ~= 1.8229166667vw @1920w */
+		--iconSize: 1.8229166667vw;
 	}
 	.order-icon-item {
 		display: inline-flex;

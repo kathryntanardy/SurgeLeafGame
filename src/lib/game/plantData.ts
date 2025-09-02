@@ -6,8 +6,11 @@ export const plantData = [
         key: 'plant1',
         imageSrc: '/bucket1/plant.png',
         altText: 'Monstera',
-        // 390px -> 20.31vw, 115px -> 10.65vh, 336px -> 17.5vw
-        position: { left: '21.31vw', top: '11.65vh', width: '15.5vw' },
+        // width uses vw; left/top inherit from bucket; adjust via transform
+        position: {
+            width: '15%',
+            transform: 'translate(-57%, -88%)'
+        },
         points: 100,
     },
     {
@@ -15,8 +18,10 @@ export const plantData = [
         key: 'plant2',
         imageSrc: '/bucket2/plant.png',
         altText: 'River Vine',
-        // 314px -> 16.35vw, 442px -> 40.93vh, 1052px -> 54.79vw (user adjusted top to 43.93vh)
-        position: { left: '18.46vw', top: '43.93vh', width: '54.79vw' },
+        position: {
+            width: '50%',
+            transform: 'translate(-40%, -42%)'
+        },
         points: 3000,
     },
     {
@@ -24,7 +29,10 @@ export const plantData = [
         key: 'plant3',
         imageSrc: '/bucket3/plant.png',
         altText: 'Tomato',
-        position: { left: '38.75vw', top: '8.80vh', width: '6.58vw' },
+        position: {
+            width: '6.5%',
+            transform: 'translate(-56%, -95%)'
+        },
         points: 20,
     },
     {
@@ -32,8 +40,10 @@ export const plantData = [
         key: 'plant4',
         imageSrc: '/bucket4/plant.png',
         altText: 'Staff Stick',
-        // left 1069px -> 55.73vw, top 310px -> 28.70vh, width 115px -> 5.99vw (user adjusted left)
-        position: { left: '54.73vw', top: '28.70vh', width: '5.99vw' },
+        position: {
+            width: '6%',
+            transform: 'translate(-50%, -85%)'
+        },
         points: 5,
     },
     {
@@ -41,8 +51,10 @@ export const plantData = [
         key: 'plant5',
         imageSrc: '/bucket5/plant.png',
         altText: 'Mega Carrot',
-        // left 1146px -> 59.69vw, top 360px -> 33.33vh, width 152px -> 7.92vw
-        position: { left: '59.69vw', top: '33.33vh', width: '7.92vw' },
+        position: {
+            width: '7%',
+            transform: 'translate(-50%, -97%)'
+        },
         points: 99999,
     },
     {
@@ -50,8 +62,10 @@ export const plantData = [
         key: 'plant6',
         imageSrc: '/bucket6/plant.png',
         altText: 'Giant Dandelion',
-        // left 1308px -> 68.13vw, top 216px -> 20vh, width 204px -> 10.63vw (user adjusted left to 67.13vw)
-        position: { left: '67.13vw', top: '20vh', width: '10.63vw' },
+        position: {
+            width: '11%',
+            transform: 'translate(-32%, -90%)'
+        },
         points: 250,
     }
 ];

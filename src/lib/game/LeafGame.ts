@@ -58,12 +58,12 @@ export type plantInfo = {
 
 // Initial Stocks definitions
 const INITIAL_STATES: Record<string, Stock> = {
-    bucket1: Stock.Default,
-    bucket2: Stock.Default,
-    bucket3: Stock.Default,
+    bucket1: Stock.Available,
+    bucket2: Stock.Available,
+    bucket3: Stock.Available,
     bucket4: Stock.Available,
-    bucket5: Stock.Default,
-    bucket6: Stock.Default
+    bucket5: Stock.Available,
+    bucket6: Stock.Available
 };
 
 export const plantArray = writable<Record<string, plantInfo>>(
@@ -340,7 +340,7 @@ export class LeafGame {
                 deliveredPlants: newDelivered,
             };
 
-            // Adjust score (QTE removed)
+            // Adjust score 
             scoreStore.update((s) => s + plant.points);
             // Decrement stock; if reaches 0, mark OutOfStock, else keep Available
             const nextCount = Math.max(0, (plant.stockCount ?? 0) - 1);

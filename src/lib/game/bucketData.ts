@@ -32,54 +32,54 @@ export const bucketData: BucketData[] = [
         },
         altText: 'Bucket 1',
         position: {
-            left: '25.33vw',
-            top: '49.13vh',
-            width: '8vw'
+            left: '30%',
+            top: '61.13%',
+            width: '7%'
         }
     },
     {
         id: 2,
         key: 'bucket2',
         images: {
-            default: '/bucket2/default.png',
-            available: '/bucket2/available.png',
-            outOfStock: '/bucket2/available.png'
+            default: '/bucket1/default.png',
+            available: '/bucket1/available.png',
+            outOfStock: '/bucket1/available.png'
         },
         altText: 'Bucket 2',
         position: {
-            left: '37.5vw',
-            top: '60.56vh',
-            width: '5vw'
+            left: '38%',
+            top: '75%',
+            width: '5%'
         }
     },
     {
         id: 3,
         key: 'bucket3',
         images: {
-            default: '/bucket3/default.png',
-            available: '/bucket3/available.png',
-            outOfStock: '/bucket3/available.png'
+            default: '/bucket1/default.png',
+            available: '/bucket1/available.png',
+            outOfStock: '/bucket1/available.png'
         },
         altText: 'Bucket 3',
         position: {
-            left: '39.2vw',
-            top: '44.04vh',
-            width: '6.5vw'
+            left: '42%',
+            top: '55%',
+            width: '6.5%'
         }
     },
     {
         id: 4,
         key: 'bucket4',
         images: {
-            default: '/bucket4/available.png',
-            available: '/bucket4/available.png',
-            outOfStock: '/bucket4/available.png'
+            default: '/bucket1/default.png',
+            available: '/bucket1/available.png',
+            outOfStock: '/bucket1/available.png'
         },
         altText: 'Bucket 4',
         position: {
-            left: '55.95vw',
-            top: '49.15vh',
-            width: '4.2vw'
+            left: '58%',
+            top: '63%',
+            width: '4.2%'
         }
     },
     {
@@ -92,24 +92,24 @@ export const bucketData: BucketData[] = [
         },
         altText: 'Bucket 5',
         position: {
-            left: '58.77vw',
-            top: '60.28vh',
-            width: '10vw'
+            left: '63%',
+            top: '79.28%',
+            width: '9%'
         }
     },
     {
         id: 6,
         key: 'bucket6',
         images: {
-            default: '/bucket6/default.png',
-            available: '/bucket6/available.png',
-            outOfStock: '/bucket6/available.png'
+            default: '/bucket5/default.png',
+            available: '/bucket5/available.png',
+            outOfStock: '/bucket5/available.png'
         },
         altText: 'Bucket 6',
         position: {
-            left: '67.23vw',
-            top: '52.39vh',
-            width: '6.5vw'
+            left: '70%',
+            top: '68%',
+            width: '6.5%'
         }
     }
 ];

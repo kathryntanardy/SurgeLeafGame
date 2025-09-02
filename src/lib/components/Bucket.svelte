@@ -30,7 +30,8 @@
 	class:default={isDefault}
 	class:out={isOut}
 	class:topBucket={bucket.key === 'bucket5' || bucket.id === 5}
-	style="left: {bucket.position.left}; top: {bucket.position.top}; width: {bucket.position.width}"
+	style="left: {bucket.position.left}; top: {bucket.position.top}; width: {bucket.position
+		.width}; transform: translate(-50%, 0)"
 	draggable="false"
 />
 
@@ -39,6 +40,7 @@
 	<Plant
 		plant={matchingPlant}
 		bucketState={plantState ?? Stock.Default}
+		basePosition={{ left: bucket.position.left, top: bucket.position.top }}
 		on:click={() => game.plantClick(matchingPlant.key)}
 	/>
 {/if}
@@ -52,8 +54,7 @@
 		cursor: default;
 	}
 
-	/* Bucket 5 above everything else */
 	.bucket.topBucket {
-		z-index: 4;
+		z-index: 7;
 	}
 </style>

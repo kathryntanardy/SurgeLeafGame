@@ -5,6 +5,8 @@
 	export let top: string | undefined = undefined;
 	// Optional translateY (e.g., 'calc(-100% - 1vh)') to bottom-anchor without measuring height
 	export let translateY: string | undefined = undefined;
+	// Optional full translate string, e.g., 'translate(-50%, -100%)'
+	export let translate: string | undefined = undefined;
 	// Optional progress for a timer bar (1..0 remaining)
 	export let progress: number | undefined = undefined;
 
@@ -24,7 +26,7 @@
 	bind:this={cardEl}
 	style:left
 	style:top
-	style:transform={translateY ? `translateY(${translateY})` : undefined}
+	style:transform={translate ? translate : translateY ? `translateY(${translateY})` : undefined}
 	data-progress={progress}
 >
 	{#if text}
@@ -43,12 +45,12 @@
 	.order-card {
 		position: absolute;
 		background: #fffccf;
-		border-radius: 10px;
-		padding: 8px 10px 18px;
-		width: 88px;
+		border-radius: 0.5208333333vw; /* 10px @1920 */
+		padding: 0.4166666667vw 0.5208333333vw 0.9375vw; /* 8px 10px 18px @1920 */
+		width: 5%; /* 88px @1920 */
 		font-family: sans-serif;
 		color: #6d6d6d;
-		font-size: 14px;
+		font-size: 0.7291666667vw; /* 14px @1920 */
 		line-height: 1.3;
 		z-index: 5;
 	}
@@ -61,8 +63,8 @@
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 6px;
-		height: 8px;
+		bottom: 0.3125vw; /* 6px @1920 */
+		height: 0.4166666667vw; /* 8px @1920 */
 		background: rgba(0, 0, 0, 0.15);
 		border-radius: 0;
 		overflow: hidden;
