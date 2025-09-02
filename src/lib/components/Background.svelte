@@ -4,6 +4,7 @@
 	import { bucketData } from '$lib/game/bucketData';
 	import Customer from '$lib/components/Customer.svelte';
 	import ShopModal from '$lib/components/ShopModal.svelte';
+	import QTE from '$lib/components/QTE.svelte';
 	import {
 		OrderStatus,
 		orderEntities,
@@ -52,10 +53,28 @@
 		const msLeft = Math.max(0, ent.expiresAtMs - $nowStore);
 		return msLeft / total;
 	};
+
+	// const sampleConfig = {
+	// 	duration: 2.5,
+	// 	count: 3,
+	// 	major: 0.2,
+	// 	minor: 0.35,
+	// 	majorMod: 1.0,
+	// 	minorMod: 0.5
+	// };
+
+	// function someFunction() {}
 </script>
 
 <div class="background">
 	<img src="/background.png" alt="Background" class="background-image" />
+
+	<!-- Vignette overlay -->
+	<div class="vignette" aria-hidden="true"></div>
+
+	<!-- Corner overlays -->
+	<img src="/left.png" alt="" class="edge edge-left" aria-hidden="true" />
+	<img src="/right.png" alt="" class="edge edge-right" aria-hidden="true" />
 
 	{#each bucketData as bucket (bucket.id)}
 		<Bucket {bucket} />
@@ -98,6 +117,10 @@
 	{#if shopOpen}
 		<ShopModal {plantsStore} {game} on:close={onCloseModal} />
 	{/if}
+
+	<!-- <div class="tempqte">
+		<QTE config={sampleConfig} onQTE={someFunction} />
+	</div> -->
 </div>
 
 <style>
@@ -123,11 +146,35 @@
 		z-index: 0;
 	}
 
-	/* All position and dimensions is converted assuming screen width 
-   of 1920px and 1080px 
-   with manual adjustments*/
+	.vignette {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 2;
+		background:
+			radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.35) 100%),
+			radial-gradient(ellipse at top left, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 50%),
+			radial-gradient(ellipse at top right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0) 50%),
+			radial-gradient(ellipse at bottom left, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0) 60%),
+			radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0) 60%);
+	}
 
-	/* Mascot styles */
+	.edge {
+		position: absolute;
+		bottom: 0;
+		/* height: auto; */
+	}
+
+	.edge-left {
+		left: 0;
+		width: 28%;
+		transform: translate(-15%, 0);
+	}
+	.edge-right {
+		right: 0;
+		width: 20%;
+	}
+
 	.mascot {
 		position: absolute;
 		left: 44%;
@@ -136,6 +183,14 @@
 		height: auto;
 		z-index: 1;
 	}
+
+	/* .tempqte {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 150;
+	} */
 
 	@keyframes -global-scroll {
 		0% {

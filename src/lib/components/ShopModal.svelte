@@ -138,7 +138,6 @@
 		justify-content: space-between;
 	}
 
-
 	.inner-header h2 {
 		font-family: 'Catriel', catriel, sans-serif;
 		font-weight: 400;

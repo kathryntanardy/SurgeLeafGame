@@ -72,14 +72,12 @@
 
 	function checkClick() {
 		for (const a of arcs) {
-			console.log('major', Math.abs(a - timer), config.major);
 			if (Math.abs(a - timer) < config.major / 2) {
 				return onQTE(config.majorMod);
 			}
 		}
 
 		for (const a of arcs) {
-			console.log('minor', Math.abs(a - timer), config.major + config.minor);
 			if (Math.abs(a - timer) < (config.major + config.minor) / 2) {
 				return onQTE(config.minorMod);
 			}
