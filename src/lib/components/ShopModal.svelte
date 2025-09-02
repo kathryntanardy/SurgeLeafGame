@@ -100,14 +100,17 @@
 		display: grid;
 		justify-items: center;
 		align-items: start;
-		padding-top: 8.6111111111vh; /* 93px of 1080 */
 		z-index: 101;
 	}
 
-	/* Dialog panel: 600px x 650px → vw/vh */
+	/* Dialog panel: absolute within background; sizes as % of background */
 	.dialog {
-		width: 29.9%; /* match CenterStrip total width: 3*9.43vw + 2*0.8vw */
-		height: 80.1%; /* 650 / 1080 */
+		position: absolute;
+		left: 50%;
+		top: 8.6%; /* ~93 / 1080 of background height */
+		transform: translateX(-50%);
+		width: 30%;
+		height: 80%;
 		background:
 			url('/modal_bg.png') center / cover no-repeat,
 			#0f1c1b;
@@ -119,10 +122,10 @@
 		overflow: hidden;
 	}
 
-	/* Center inner panel: 438px x 515px → vw/vh */
+	/* Center inner panel sized as % of dialog (438/600 ≈ 73%; 515/650 ≈ 79.2%) */
 	.inner {
-		width: 22.8125vw; /* 438 / 1920 */
-		height: 50.6851851852vh; /* 515 / 1080 */
+		width: 73%;
+		height: 79.2%;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
@@ -135,12 +138,12 @@
 		justify-content: space-between;
 	}
 
-	/* Title styling: Catriel Bold Italic, 24px */
+
 	.inner-header h2 {
 		font-family: 'Catriel', catriel, sans-serif;
 		font-weight: 400;
 		font-style: italic;
-		font-size: 24px;
+		font-size: 1.25cqw;
 		margin: 0;
 	}
 
@@ -148,7 +151,7 @@
 		background: transparent;
 		border: 0;
 		color: #fff;
-		font-size: 1.1rem;
+		font-size: 1.2cqw; /* scales with background width */
 		cursor: pointer;
 	}
 
@@ -157,7 +160,7 @@
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
 		grid-auto-rows: auto;
-		column-gap: 0.8vw; /* horizontal space between images */
+		column-gap: 3.5%; /* ~15.36px over 438px ≈ 3.5% of inner width */
 		row-gap: 0; /* no vertical gap */
 		justify-items: stretch;
 		align-items: start;
@@ -178,6 +181,7 @@
 	.plant-img {
 		width: 100%; /* match column width */
 		height: auto; /* let width drive size to avoid narrower rendering */
+		max-height: 24cqh; /* cap by background height for consistent scaling */
 		object-fit: contain;
 		display: block;
 	}
@@ -187,12 +191,12 @@
 		border: 0;
 		padding: 0;
 		width: 100%;
-		height: 2.2vw; /* keep button height fixed; width matches image */
+		aspect-ratio: 333 / 50; /* keep image-based button proportional */
 		background-size: contain;
 		background-repeat: no-repeat;
 		background-position: center;
 		cursor: pointer;
-		font-size: max(0.625vw, 1.1111111111vh);
+		font-size: 0.9cqw; /* scale button label with background width */
 		font-weight: 100;
 		color: #8a6f6a;
 	}

@@ -92,7 +92,13 @@
 	on:click={() => dispatch('click')}
 ></div>
 
-<div class="customer" style:left style:top style:width={imageWidth} on:click={() => dispatch('click')}>
+<div
+	class="customer"
+	style:left
+	style:top
+	style:width={imageWidth}
+	on:click={() => dispatch('click')}
+>
 	<img
 		src={resolvedSrc}
 		{alt}

@@ -58,12 +58,12 @@ export type plantInfo = {
 
 // Initial Stocks definitions
 const INITIAL_STATES: Record<string, Stock> = {
-    bucket1: Stock.Available,
-    bucket2: Stock.Available,
-    bucket3: Stock.Available,
+    bucket1: Stock.Default,
+    bucket2: Stock.Default,
+    bucket3: Stock.Default,
     bucket4: Stock.Available,
-    bucket5: Stock.Available,
-    bucket6: Stock.Available
+    bucket5: Stock.Default,
+    bucket6: Stock.Default
 };
 
 export const plantArray = writable<Record<string, plantInfo>>(
