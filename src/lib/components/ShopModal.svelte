@@ -16,7 +16,7 @@
 		plant6: 'dandelion.png'
 	};
 
-	const dispatch = createEventDispatcher<{ close: void }>();
+	const dispatch = createEventDispatcher<{ close: void; restock: { plantKey: string } }>();
 
 	function close() {
 		dispatch('close');
@@ -68,14 +68,14 @@
 								(p?.state === Stock.Default && $scoreStore < p.points)}
 							on:click={() => {
 								if (!p) return;
-								if (p.state === Stock.OutOfStock) game.restockPlant(key);
+								if (p.state === Stock.OutOfStock) dispatch('restock', { plantKey: key });
 								else if (p.state === Stock.Default && $scoreStore >= p.points)
 									game.unlockPlant(key);
 							}}
 						>
-							<span>
+							<!-- <span>
 								{p?.state === Stock.Default ? 'Unlock' : 'Restock'}
-							</span>
+							</span> -->
 						</button>
 					</div>
 				{/each}
@@ -171,7 +171,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0; /* no spacing between image and button */
+		gap: 0.8cqh; /* increase spacing between image and button */
 		padding: 0;
 		margin: 0;
 		width: 100%;
@@ -191,7 +191,7 @@
 		padding: 0;
 		width: 100%;
 		aspect-ratio: 333 / 50; /* keep image-based button proportional */
-		background-size: contain;
+		background-size: 100% 100%;
 		background-repeat: no-repeat;
 		background-position: center;
 		cursor: pointer;

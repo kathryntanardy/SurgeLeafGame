@@ -1,5 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { plantData } from '$lib/game/plantData';
+import type { QTEConfig } from '$lib/game/qteConfig';
+import { qteConfigByPlant } from '$lib/game/qteConfig';
 
 
 export type Order = Record<string, number>;
@@ -45,6 +47,20 @@ export const displaySlots = writable<(number | null)[]>([null, null, null]);
 export const tempSelectedPlant = writable<string | null>(null); // pending plant key
 
 // (QTE removed)
+// QTE session store (guarded by ENABLE_QTE; not yet wired into UI)
+export type ActiveQTESession = {
+    plantKey: string;
+    sizeCqw: number;
+    leftPct: string; // percent string e.g. '63%'
+    topPct: string;  // percent string e.g. '79%'
+    transformCss?: string; // carried-through transform to match plant centering
+    config: QTEConfig;
+} | null;
+export const activeQTESession = writable<ActiveQTESession>(null);
+
+
+export type ThanksToast = { id: number; amount: number; slotIdx: number; createdAtMs: number };
+export const thanksToasts = writable<ThanksToast[]>([]);
 
 // State for plant information during runtime
 export type plantInfo = {
@@ -54,6 +70,7 @@ export type plantInfo = {
     bucketKey: string;
     state: Stock;
     stockCount: number; // remaining deliveries before OutOfStock (0 when not Available)
+    scoreMultiplier?: number; // persists until next restock/unlock
 };
 
 // Initial Stocks definitions
@@ -73,7 +90,7 @@ export const plantArray = writable<Record<string, plantInfo>>(
             const initialState = INITIAL_STATES[bucketKey] ?? Stock.Available;
             return [
                 p.key,
-                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0 }
+                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0, scoreMultiplier: 1 }
             ];
         })
     )
@@ -93,7 +110,7 @@ export const nowStore = writable<number>(Date.now());
 // to control how often timer bars is updated (10 updates/sec)
 export const NOW_TICK_MS = 100;
 // Default duration for an order before it fails (not yet wired into logic)
-export const ORDER_DEFAULT_DURATION_MS = 10_000;
+export const ORDER_DEFAULT_DURATION_MS = 15_000;
 // Threshold ratio at which a customer begins showing an unhappy face (e.g. 0.25 = last 25%)
 export const ORDER_HURRY_THRESHOLD_RATIO = 0.25;
 // How long a customer (success or failure) should remain before being removed
@@ -102,6 +119,19 @@ export const CUSTOMER_REMAIN_IN_SCREEN = 5_000;
 export const MASCOT_SUCCESS_MS = 3_000;
 // How long the mascot should show failure after an order fails
 export const MASCOT_FAILURE_MS = 2_000;
+
+// Rollback boolean
+export const ENABLE_QTE = true;
+
+// Local default QTE config fallback (used if plant key missing in qteConfigByPlant)
+const DEFAULT_QTE_CONFIG: QTEConfig = {
+    duration: 2.5,
+    count: 3,
+    major: 0.20,
+    minor: 0.35,
+    majorMod: 1.0,
+    minorMod: 1.0,
+};
 
 export class LeafGame {
     private orderSeq: number = 1;
@@ -310,6 +340,64 @@ export class LeafGame {
     }
 
     // (QTE removed)
+    // Derive QTE session payload for a given plant key
+    deriveQTESessionFor(plantKey: string): ActiveQTESession {
+        const runtime = get(plantArray)[plantKey];
+        const meta = plantData.find((p) => p.key === plantKey);
+        if (!runtime || !meta) return null;
+        const bucketKey = runtime.bucketKey;
+        // Bucket position is percent-based; find by id extracted from bucket key
+        const bucketId = Number(bucketKey.replace('bucket', ''));
+        // Plant positions are centered relative to the bucket's left/top
+        const leftPct = this.getBucketLeftPct(bucketId);
+        const topPct = this.getBucketTopPct(bucketId);
+        const widthStr = meta.position.width; // like '7%'
+        const widthNum = Number(widthStr.replace('%', '')) || 8;
+        // Anchor to bucket; shift upward by an estimate of the plant height from its width
+        // Convert plant width (% of container width) to an approximate height in cqh using 8/19 aspect ratio
+        const approxHeightCqh = (widthNum * 8) / 19; // ~full plant height in cqh
+        const cfg = qteConfigByPlant[plantKey] ?? DEFAULT_QTE_CONFIG;
+        const extraY = cfg.offsetYcqh ?? 0; // allow manual per-plant adjustment
+        const transformCss = `translate(-50%, 0) translateY(-${approxHeightCqh - extraY}cqh)`;
+        const config = cfg;
+        return {
+            plantKey,
+            sizeCqw: widthNum, // 7% -> 7cqw
+            leftPct,
+            topPct,
+            transformCss,
+            config
+        };
+    }
+
+    private getBucketLeftPct(bucketId: number): string {
+        // Fallback: derive from known bucket positions in bucketData only in UI; here we use a rough map
+        // Since LeafGame does not import bucketData to avoid tight coupling, we approximate via plantData id mapping.
+        // Background/Bucket use exact bucketData; the overlay will ultimately be positioned there.
+        // Return percent string to be applied in UI.
+        // Note: Actual alignment will be done in the UI using bucketData; this fallback keeps type usage local.
+        switch (bucketId) {
+            case 1: return '30%';
+            case 2: return '38%';
+            case 3: return '42%';
+            case 4: return '58%';
+            case 5: return '63%';
+            case 6: return '70%';
+            default: return '50%';
+        }
+    }
+
+    private getBucketTopPct(bucketId: number): string {
+        switch (bucketId) {
+            case 1: return '61.13%';
+            case 2: return '75%';
+            case 3: return '55%';
+            case 4: return '63%';
+            case 5: return '79.28%';
+            case 6: return '68%';
+            default: return '50%';
+        }
+    }
 
     // Customer Click: deliver selected plant to a specific order
     deliverPlant(orderId: number): void {
@@ -340,8 +428,10 @@ export class LeafGame {
                 deliveredPlants: newDelivered,
             };
 
-            // Adjust score 
-            scoreStore.update((s) => s + plant.points);
+            // Adjust score with persistent multiplier
+            const multiplier = Math.max(0, plant.scoreMultiplier ?? 1);
+            const awarded = Math.round(plant.points * multiplier);
+            scoreStore.update((s) => s + awarded);
             // Decrement stock; if reaches 0, mark OutOfStock, else keep Available
             const nextCount = Math.max(0, (plant.stockCount ?? 0) - 1);
             const nextState = nextCount === 0 ? Stock.OutOfStock : Stock.Available;
@@ -353,6 +443,16 @@ export class LeafGame {
                 updated.status = OrderStatus.Success;
                 // Trigger mascot celebration briefly
                 this.showMascotSuccessFor();
+                // Emit thanks toast near this customer slot with the amount from the last delivery
+                const slotsSnapshot = get(displaySlots);
+                const slotIdx = slotsSnapshot.indexOf(orderId);
+                if (slotIdx !== -1) {
+                    const id = Date.now();
+                    thanksToasts.update((arr) => [...arr, { id, amount: awarded, slotIdx, createdAtMs: Date.now() }]);
+                    setTimeout(() => {
+                        thanksToasts.update((arr) => arr.filter((t) => t.id !== id));
+                    }, CUSTOMER_REMAIN_IN_SCREEN);
+                }
                 // schedule removal and clear slot
                 setTimeout(() => {
                     // remove from entities
@@ -380,7 +480,15 @@ export class LeafGame {
     restockPlant(key: string): void {
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10 } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
+    }
+
+    // Restock with multiplier persistence
+    restockPlantWithMultiplier(key: string, multiplier: number): void {
+        const plant = get(plantArray)[key];
+        if (!plant || plant.state !== Stock.OutOfStock) return;
+        const safeMult = Number.isFinite(multiplier) ? Math.max(0, multiplier) : 1;
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: safeMult } }));
     }
 
     // Unlock: Default -> Available, cost = plant.points (plant 4 free)
@@ -394,7 +502,7 @@ export class LeafGame {
             if (currentScore < cost) return;
             scoreStore.update((s) => s - cost);
         }
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10 } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
         // Track unlocked key for future order generation
         if (!this.unlockedKeys.includes(key)) this.unlockedKeys.push(key);
     }

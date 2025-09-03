@@ -1,6 +1,9 @@
 <script module lang="ts">
 	export interface QTEProps {
 		onQTE: (val: number) => void;
+		onDone?: (successes: number) => void; // fires after attempts are exhausted
+		attempts?: number; // number of clicks in a session (default 3)
+		sizeCqw?: number; // optional: size in cqw; height equals width
 		config: {
 			duration: number; // how long is the entire qte circle, in s
 			count: number; // how many hot spots
@@ -13,80 +16,151 @@
 </script>
 
 <script lang="ts">
-	let { onQTE, config }: QTEProps = $props();
+	let { onQTE, onDone, attempts = 3, sizeCqw, config }: QTEProps = $props();
+
+	// Do not mutate incoming config; build arcs from a local counter
 	let arcs = $derived.by(() => {
 		const _arcs: number[] = [];
-
 		let tries = 100;
-
-		while (tries > 0 && config.count > 0) {
+		let remain = Math.max(0, config.count);
+		while (tries > 0 && remain > 0) {
 			tries--;
 			const cand = Math.random() * config.duration;
 			let legal = true;
-
 			for (const a of _arcs) {
 				if (Math.abs(a - cand) < config.minor + config.major) {
 					legal = false;
 					break;
 				}
 			}
-
 			if (legal) {
 				_arcs.push(cand);
-				config.count--;
+				remain--;
 			}
 		}
-
 		return _arcs;
 	});
 
 	let timer = $state(0);
+	let rafId: number | null = null;
+	let clicks = $state(0);
+	let successes = $state(0);
+	let sessionDone = $state(false);
 
 	function updateTimer(t: number) {
+		if (sessionDone) return;
 		timer = (t % (config.duration * 1000)) / 1000;
-		requestAnimationFrame(updateTimer);
+		rafId = requestAnimationFrame(updateTimer);
 	}
 
 	$effect(() => {
-		requestAnimationFrame(updateTimer);
+		rafId = requestAnimationFrame(updateTimer);
+		return () => {
+			if (rafId != null) cancelAnimationFrame(rafId);
+			rafId = null;
+		};
+	});
+
+	// Dynamic geometry based on actual button size (px)
+	let btnRef: HTMLButtonElement | null = null;
+	let btnSizePx = $state(80);
+	$effect(() => {
+		if (!btnRef) return;
+		const ro = new ResizeObserver((entries) => {
+			const cr = entries[0]?.contentRect;
+			if (cr) btnSizePx = cr.width;
+		});
+		ro.observe(btnRef);
+		return () => ro.disconnect();
 	});
 
 	function buildArc(center: number, range: number) {
-		const centerOffset = 40;
-		const radius = 38.5; // px
-		const thickness = 10;
+		const centerOffset = btnSizePx / 2;
+		// Align arc ring to the white inner ring geometry in CSS
+		const BORDER_FRAC = 0.025; // matches button/inner ring border calc
+		const INNER_SUB_FRAC = 0.22; // matches inner ring subtraction
+		const whiteOuterRadius = (btnSizePx * (1 - INNER_SUB_FRAC + 2 * BORDER_FRAC)) / 2;
+		// Slightly overlap to remove anti-aliasing seam with the white ring
+		const overlapPx = 0.9; // try 0.5–1.0 for fine-tuning
+		const thickness = Math.max(6, btnSizePx * 0.08);
+		const innerEdgeTarget = whiteOuterRadius - overlapPx;
+		const radius = Math.max(0, innerEdgeTarget + thickness);
 		let out = '';
 		const ca = (center / config.duration) * Math.PI * 2;
 		const ra = (range / config.duration) * Math.PI * 2;
-
-		// initial point
 		out += `M ${centerOffset + Math.sin(ca - ra) * radius} ${centerOffset - Math.cos(ca - ra) * radius} `;
-		// sweep clockwise outer arc
 		out += `A ${radius} ${radius} 0 0 1 ${centerOffset + Math.sin(ca + ra) * radius} ${centerOffset - Math.cos(ca + ra) * radius} `;
-
 		out += `L ${centerOffset + Math.sin(ca + ra) * (radius - thickness)} ${centerOffset - Math.cos(ca + ra) * (radius - thickness)}`;
-
 		out += `A ${radius - thickness} ${radius - thickness} 0 0 0 ${centerOffset + Math.sin(ca - ra) * (radius - thickness)} ${centerOffset - Math.cos(ca - ra) * (radius - thickness)} `;
 		return out;
 	}
 
+	// Build a full donut ring path that matches the arc band geometry
+	function buildRingPath() {
+		const centerOffset = btnSizePx / 2;
+		const BORDER_FRAC = 0.025;
+		const INNER_SUB_FRAC = 0.22;
+		const whiteOuterRadius = (btnSizePx * (1 - INNER_SUB_FRAC + 2 * BORDER_FRAC)) / 2;
+		const overlapPx = 0.9; // keep in sync with buildArc seam overlap
+		const thickness = Math.max(6, btnSizePx * 0.08);
+		const outerR = Math.max(0, whiteOuterRadius - overlapPx + thickness);
+		const innerR = Math.max(0, outerR - thickness);
+
+		let out = '';
+		// Start at angle 0 on outer radius
+		const a0 = 0;
+		const a1 = Math.PI; // 180 deg
+		const a2 = Math.PI * 2; // 360 deg
+		out += `M ${centerOffset + Math.sin(a0) * outerR} ${centerOffset - Math.cos(a0) * outerR} `;
+		// Outer two half-arcs (clockwise)
+		out += `A ${outerR} ${outerR} 0 1 1 ${centerOffset + Math.sin(a1) * outerR} ${centerOffset - Math.cos(a1) * outerR} `;
+		out += `A ${outerR} ${outerR} 0 1 1 ${centerOffset + Math.sin(a2) * outerR} ${centerOffset - Math.cos(a2) * outerR} `;
+		// Join to inner radius
+		out += `L ${centerOffset + Math.sin(a2) * innerR} ${centerOffset - Math.cos(a2) * innerR} `;
+		// Inner two half-arcs (counter-clockwise to close)
+		out += `A ${innerR} ${innerR} 0 1 0 ${centerOffset + Math.sin(a1) * innerR} ${centerOffset - Math.cos(a1) * innerR} `;
+		out += `A ${innerR} ${innerR} 0 1 0 ${centerOffset + Math.sin(a0) * innerR} ${centerOffset - Math.cos(a0) * innerR} `;
+		return out;
+	}
+
+	function finishIfNeeded() {
+		if (clicks >= attempts && !sessionDone) {
+			sessionDone = true;
+			if (rafId != null) cancelAnimationFrame(rafId);
+			rafId = null;
+			if (onDone) onDone(successes);
+		}
+	}
+
 	function checkClick() {
+		if (sessionDone) return;
+		let majorHit = false;
+		let minorHit = false;
 		for (const a of arcs) {
 			if (Math.abs(a - timer) < config.major / 2) {
-				return onQTE(config.majorMod);
+				majorHit = true;
+				break;
 			}
 		}
-
-		for (const a of arcs) {
-			if (Math.abs(a - timer) < (config.major + config.minor) / 2) {
-				return onQTE(config.minorMod);
+		if (!majorHit) {
+			for (const a of arcs) {
+				if (Math.abs(a - timer) < (config.major + config.minor) / 2) {
+					minorHit = true;
+					break;
+				}
 			}
 		}
+		if (majorHit) onQTE(config.majorMod);
+		else if (minorHit) onQTE(config.minorMod);
+		if (majorHit || minorHit) successes = successes + 1;
+		clicks = clicks + 1;
+		finishIfNeeded();
 	}
 </script>
 
-<div class="qteContainer">
+<div class="qteContainer" style={sizeCqw != null ? `--container-size:${sizeCqw}cqw;` : ''}>
 	<button
+		bind:this={btnRef}
 		class="qteBtn"
 		style="--angle:{((timer / config.duration) * 360).toFixed(2)}deg;"
 		onclick={() => {
@@ -108,6 +182,12 @@
 				)}'; --color: var(--border); z-index: 1;"
 			></div>
 		{/each}
+
+		<!-- Full ring matching arc geometry, rendered under segments -->
+		<div
+			class="arc full-ring"
+			style="--path: '{buildRingPath()}'; --color: var(--border); z-index: 0;"
+		></div>
 	</button>
 </div>
 
@@ -119,8 +199,12 @@
 	.qteContainer {
 		position: relative;
 
-		width: 90px;
-		height: 90px;
+		/* Map original ~90px container to 5.5cqw */
+		--container-size: 5.5cqw;
+		/* Original button was 80px inside 90px container → 80/90 ≈ 0.8889 */
+		--btn-size: calc(var(--container-size) * 0.8888889);
+		width: var(--container-size);
+		height: var(--container-size);
 
 		background-color: var(--bg-trans);
 		border-radius: 50%;
@@ -133,8 +217,8 @@
 		transform: translate(-50%, -50%);
 
 		background-color: var(--color);
-		width: 80px;
-		height: 80px;
+		width: var(--btn-size);
+		height: var(--btn-size);
 
 		clip-path: path(var(--path));
 	}
@@ -146,11 +230,12 @@
 		transform: translate(-50%, -50%);
 		border-radius: 50%;
 
-		width: 80px;
-		height: 80px;
+		width: var(--btn-size);
+		height: var(--btn-size);
 
 		background-color: var(--bg);
-		border: 2px solid var(--border);
+		/* Original 2px border at 80px → 2/80 = 0.025 */
+		border: calc(var(--btn-size) * 0.025) solid var(--border);
 
 		cursor: pointer;
 	}
@@ -164,10 +249,12 @@
 		top: 50%;
 		transform: translate(-50%, -50%);
 
-		width: calc(100% - 4px - 11px);
-		height: calc(100% - 4px - 11px);
+		/* Make inner ring diameter smaller (increase subtraction factor) */
+		width: calc(100% - (var(--btn-size) * 0.22));
+		height: calc(100% - (var(--btn-size) * 0.22));
 
-		border: 2px solid var(--border);
+		/* 2px at 80px → 0.025 */
+		border: calc(var(--btn-size) * 0.025) solid var(--border);
 		border-radius: 50%;
 
 		z-index: 5;
@@ -181,23 +268,28 @@
 		transform-origin: center;
 		transform: translate(-50%, -50%) rotate(var(--angle));
 
-		width: 4px;
-		height: calc(100% + 6px);
+		/* Sweep width 4px at 80px → 0.05; extra height +6px at 80px → 0.075 */
+		width: calc(var(--btn-size) * 0.05);
+		height: calc(100% + (var(--btn-size) * 0.075));
 
 		box-sizing: border-box;
-		border-top: 18px solid var(--header);
+		/* 18px at 80px → 0.225 */
+		border-top: calc(var(--btn-size) * 0.225) solid var(--header);
 
 		z-index: 10;
 	}
 
 	.qteBtn > img {
-		width: 2.75rem;
-		height: 2.75rem;
+		/* Scale icon together with QTE size */
+		width: calc(var(--btn-size) * 0.5);
+		height: calc(var(--btn-size) * 0.5);
 
 		position: absolute;
-		left: 50%;
-		top: 50%;
+		left: 46%;
+		top: 47%;
 
 		transform: translate(-50%, -50%);
+		z-index: 20;
+		pointer-events: none;
 	}
 </style>

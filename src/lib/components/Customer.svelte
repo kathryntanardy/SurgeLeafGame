@@ -28,6 +28,8 @@
 	export let orderText: string = 'worm x2, tomato x1';
 	// Optional: rich items to render icons instead of text
 	export let orderItems: Record<string, number> | undefined = undefined;
+	// Optional thanks amount to render in the same order bubble position after success
+	export let thanksAmount: number | null = null;
 
 	// Gap between bottom of order and top of customer (use vw only; 1vh ≈ 0.5625vw at 16:9)
 	export let orderGapY: string = '5%';
@@ -64,8 +66,15 @@
 	};
 </script>
 
-<!-- Order bubble/card is visible only while InProgress -->
-{#if state === OrderStatus.InProgress}
+<!-- Order bubble/card: show normal order while in progress; show Thanks when provided -->
+{#if thanksAmount != null}
+	<Order left={orderLeft} top={orderTop} {translateY} progress={undefined}>
+		<div class="thanks-wrap">
+			<div class="thanks-title">Thanks!</div>
+			<div class="thanks-amount"><img src="/leafIcon.png" alt="" /> {thanksAmount}</div>
+		</div>
+	</Order>
+{:else if state === OrderStatus.InProgress}
 	<Order left={orderLeft} top={orderTop} {translateY} progress={timerRatio}>
 		{#if orderItems}
 			<div class="order-icons">
@@ -152,5 +161,26 @@
 	.order-qty {
 		color: #8a6f6a;
 		line-height: 1;
+	}
+	.thanks-wrap {
+		display: grid;
+		gap: 0rem;
+		place-items: center;
+	}
+	.thanks-title {
+		padding-top: 0.4rem;
+		font-size: 0.8cqw;
+		font-weight: 400;
+	}
+	.thanks-amount {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-size: 1.2cqw;
+		font-weight: 500;
+	}
+	.thanks-amount img {
+		width: 1cqw;
+		height: 1cqw;
 	}
 </style>
