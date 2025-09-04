@@ -43,8 +43,8 @@ export const qteConfigByPlant: Record<string, QTEConfig> = {
     plant4: {
         duration: 2.0,
         count: 3,
-        major: 0.25,
-        minor: 0.35,
+        major: 0.05,
+        minor: 0.05,
         majorMod: 1.0,
         minorMod: 1.0,
         offsetYcqh: -15

@@ -76,15 +76,12 @@
 
 	function buildArc(center: number, range: number) {
 		const centerOffset = btnSizePx / 2;
-		// Align arc ring to the white inner ring geometry in CSS
-		const BORDER_FRAC = 0.025; // matches button/inner ring border calc
-		const INNER_SUB_FRAC = 0.22; // matches inner ring subtraction
-		const whiteOuterRadius = (btnSizePx * (1 - INNER_SUB_FRAC + 2 * BORDER_FRAC)) / 2;
-		// Slightly overlap to remove anti-aliasing seam with the white ring
-		const overlapPx = 0.9; // try 0.5–1.0 for fine-tuning
-		const thickness = Math.max(6, btnSizePx * 0.08);
-		const innerEdgeTarget = whiteOuterRadius - overlapPx;
-		const radius = Math.max(0, innerEdgeTarget + thickness);
+		// Scale from original baseline (80px button): radius ≈ 38.5px → centerOffset - 1.5px (1.5/80)
+		const RADIUS_INSET_FRAC = 0.01875;
+		// Thickness 10px on 80px → 0.125
+		const THICKNESS_FRAC = 0.125;
+		const thickness = Math.max(6, btnSizePx * THICKNESS_FRAC);
+		const radius = Math.max(0, centerOffset - btnSizePx * RADIUS_INSET_FRAC);
 		let out = '';
 		const ca = (center / config.duration) * Math.PI * 2;
 		const ra = (range / config.duration) * Math.PI * 2;
@@ -98,13 +95,10 @@
 	// Build a full donut ring path that matches the arc band geometry
 	function buildRingPath() {
 		const centerOffset = btnSizePx / 2;
-		const BORDER_FRAC = 0.025;
-		const INNER_SUB_FRAC = 0.22;
-		const whiteOuterRadius = (btnSizePx * (1 - INNER_SUB_FRAC + 2 * BORDER_FRAC)) / 2;
-		const overlapPx = 0.9; // keep in sync with buildArc seam overlap
-		const thickness = Math.max(6, btnSizePx * 0.08);
-		const outerR = Math.max(0, whiteOuterRadius - overlapPx + thickness);
-		const innerR = Math.max(0, outerR - thickness);
+		const RADIUS_INSET_FRAC = 0.01875; // 1.5/80
+		const THICKNESS_FRAC = 0.125; // 10/80
+		const outerR = Math.max(0, centerOffset - btnSizePx * RADIUS_INSET_FRAC);
+		const innerR = Math.max(0, outerR - btnSizePx * THICKNESS_FRAC);
 
 		let out = '';
 		// Start at angle 0 on outer radius

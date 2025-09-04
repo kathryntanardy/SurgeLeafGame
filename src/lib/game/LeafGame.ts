@@ -443,12 +443,21 @@ export class LeafGame {
                 updated.status = OrderStatus.Success;
                 // Trigger mascot celebration briefly
                 this.showMascotSuccessFor();
-                // Emit thanks toast near this customer slot with the amount from the last delivery
+                // Compute order total: sum of each delivered count × plant points × current multiplier
+                const plantSnapshot = get(plantArray);
+                let orderTotal = 0;
+                for (const [pKey, cnt] of Object.entries(newDelivered)) {
+                    const p = plantSnapshot[pKey];
+                    if (!p) continue;
+                    const mult = Math.max(0, p.scoreMultiplier ?? 1);
+                    orderTotal += Math.round(p.points * mult) * (cnt as number);
+                }
+                // Emit thanks toast near this customer slot with the computed order total
                 const slotsSnapshot = get(displaySlots);
                 const slotIdx = slotsSnapshot.indexOf(orderId);
                 if (slotIdx !== -1) {
                     const id = Date.now();
-                    thanksToasts.update((arr) => [...arr, { id, amount: awarded, slotIdx, createdAtMs: Date.now() }]);
+                    thanksToasts.update((arr) => [...arr, { id, amount: orderTotal, slotIdx, createdAtMs: Date.now() }]);
                     setTimeout(() => {
                         thanksToasts.update((arr) => arr.filter((t) => t.id !== id));
                     }, CUSTOMER_REMAIN_IN_SCREEN);
@@ -488,6 +497,9 @@ export class LeafGame {
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
         const safeMult = Number.isFinite(multiplier) ? Math.max(0, multiplier) : 1;
+        // Debug: log per-plant multiplier chosen via QTE
+        // eslint-disable-next-line no-console
+        console.log('[QTE] restock multiplier', { plantKey: key, multiplier: safeMult });
         plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: safeMult } }));
     }
 
