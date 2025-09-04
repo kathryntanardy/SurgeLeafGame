@@ -4,6 +4,7 @@
 	import Plant from './Plant.svelte';
 	import { plantData } from '$lib/game/plantData';
 	import { game, plantsStore } from '$lib/game/LeafGame';
+	import { isMobile } from '$lib/layout';
 
 	export let bucket: BucketData;
 
@@ -30,8 +31,13 @@
 	class:default={isDefault}
 	class:out={isOut}
 	class:topBucket={bucket.key === 'bucket5' || bucket.id === 5}
-	style="left: {bucket.position.left}; top: {bucket.position.top}; width: {bucket.position
-		.width}; transform: translate(-50%, 0)"
+	style="left: {$isMobile && bucket.mobilePosition
+		? bucket.mobilePosition.left
+		: bucket.position.left}; top: {$isMobile && bucket.mobilePosition
+		? bucket.mobilePosition.top
+		: bucket.position.top}; width: {$isMobile && bucket.mobilePosition
+		? bucket.mobilePosition.width
+		: bucket.position.width}; transform: translate(-50%, 0)"
 	draggable="false"
 />
 
@@ -40,7 +46,10 @@
 	<Plant
 		plant={matchingPlant}
 		bucketState={plantState ?? Stock.Default}
-		basePosition={{ left: bucket.position.left, top: bucket.position.top }}
+		basePosition={{
+			left: $isMobile && bucket.mobilePosition ? bucket.mobilePosition.left : bucket.position.left,
+			top: $isMobile && bucket.mobilePosition ? bucket.mobilePosition.top : bucket.position.top
+		}}
 		on:click={() => game.plantClick(matchingPlant.key)}
 	/>
 {/if}

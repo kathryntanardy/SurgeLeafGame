@@ -13,15 +13,15 @@
 			mode="display"
 			iconSrc="/timeIcon.png"
 			value={timerText}
-			leftIconWidth="1.04vw"
-			leftIconHeight="calc(1.85 * 100vw * 8 / 19 / 100)"
+			leftIconWidth="0.8vw"
+			leftIconHeight="0.8vw"
 		/>
 		<HudBox
 			mode="display"
 			iconSrc="/leafIcon.png"
 			value={$scoreStore}
 			leftIconWidth="1.04vw"
-			leftIconHeight="calc(1.85 * 100vw * 8 / 19 / 100)"
+			leftIconHeight="1.04vw"
 		/>
 		<HudBox mode="button" onClick={onOpenModal} />
 	</div>
@@ -43,4 +43,17 @@
 		justify-content: center;
 		gap: 0.8vw;
 	}
+
+	@container (max-width: 640px) {
+		.center-strip {
+			width: 90%; /* nearly full width; use 95cqw for slight inset */
+		}
+		.hud {
+			width: 100%; /* let the flex row span the strip */
+			justify-content: space-between; /* spread the 3 boxes edge-to-edge */
+			gap: 0cqw; /* small minimum spacing */
+			padding: 0 3cqw;
+		}
+	}
+	
 </style>

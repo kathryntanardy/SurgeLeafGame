@@ -11,6 +11,10 @@ export const plantData = [
             width: '15%',
             transform: 'translate(-57%, -88%)'
         },
+        mobilePosition: {
+            width: '40%',
+            transform: 'translate(-57%, -88%)'
+        },
         points: 100,
     },
     {
@@ -20,6 +24,10 @@ export const plantData = [
         altText: 'River Vine',
         position: {
             width: '50%',
+            transform: 'translate(-40%, -42%)'
+        },
+         mobilePosition: {
+            width: '100%',
             transform: 'translate(-40%, -42%)'
         },
         points: 3000,
@@ -33,6 +41,10 @@ export const plantData = [
             width: '6.5%',
             transform: 'translate(-56%, -95%)'
         },
+        mobilePosition: {
+            width: '18%',
+            transform: 'translate(-52%, -97%)'
+        },
         points: 20,
     },
     {
@@ -43,6 +55,10 @@ export const plantData = [
         position: {
             width: '6%',
             transform: 'translate(-50%, -85%)'
+        },
+        mobilePosition: {
+            width: '15%',
+            transform: 'translate(-52%, -90%)'
         },
         points: 5,
     },
@@ -55,6 +71,10 @@ export const plantData = [
             width: '7%',
             transform: 'translate(-50%, -97%)'
         },
+        mobilePosition: {
+            width: '20%',
+            transform: 'translate(-52%, -96.55%)'
+        },
         points: 99999,
     },
     {
@@ -65,6 +85,10 @@ export const plantData = [
         position: {
             width: '11%',
             transform: 'translate(-32%, -90%)'
+        },
+        mobilePosition: {
+            width: '25%',
+            transform: 'translate(-32%, -96.55%)'
         },
         points: 250,
     }

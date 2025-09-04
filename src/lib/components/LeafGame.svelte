@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Background from './Background.svelte';
+	import { isMobile } from '$lib/layout';
 </script>
 
-<div id="leafGame">
+<div id="leafGame" class:mobile={$isMobile}>
 	<Background />
 </div>
 
@@ -20,5 +21,11 @@
 		border: 1px solid;
 		overflow: visible;
 		background: #1b3534;
+	}
+	#leafGame.mobile {
+		aspect-ratio: 393 / 852;
+		width: 100vw;
+		height: auto;
+		max-height: 100vh;
 	}
 </style>

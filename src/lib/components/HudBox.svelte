@@ -10,15 +10,14 @@
 	export let containerSrc: string = '/container.png'; // box background (from /static)
 	export let iconSrc: string | undefined = undefined; // left icon in display mode
 
-	// Sizes (viewport-relative)
-	export let leftIconWidth: string | undefined = undefined; // e.g., '1.04vw'
-	export let leftIconHeight: string | undefined = undefined; // e.g., '1.85vh'
+	// Sizes (viewport-relative). 
+	export let leftIconWidth: string | undefined = undefined; 
+	export let leftIconHeight: string | undefined = undefined; 
 	export let buttonWidth: string = '5.6vw';
 	export let buttonHeight: string = '2.2vh';
 
-	// Derived defaults (kept close to 14.57px @ 1920x1080)
-	const defaultLeftW = '0.78vw';
-	const defaultLeftH = '1.50vh';
+	const defaultLeftW = '1.2cqw';
+	const defaultLeftH = '1.2cqw';
 	const effectiveLeftW = leftIconWidth ?? defaultLeftW;
 	const effectiveLeftH = leftIconHeight ?? defaultLeftH;
 </script>
@@ -74,8 +73,8 @@
 
 	/* Default left icon size; can be overridden inline */
 	.left-icon {
-		width: 0.76vw;
-		height: 1.35vh;
+		width: 1.2cqw;
+		height: 1.2cqw;
 		pointer-events: none;
 	}
 
@@ -111,5 +110,59 @@
 		font-family: 'Catriel', catriel, sans-serif;
 		font-weight: 400;
 		letter-spacing: 0.02em;
+	}
+
+	@container (max-width: 640px) {
+		.hud-box {
+			/* 181px x 43px -> 9.43vw x 3.98vh */
+			width: 25vw;
+			height: 4vh;
+			background-size: 100% 100%;
+			display: inline-flex;
+			align-items: center;
+		}
+
+		.left-icon {
+			width: 2.2cqw !important;
+			height: 2.2cqw !important;
+		}
+
+		.icon-button {
+			width: 15cqw !important;
+			height: 3.5cqw !important;
+		}
+
+		.value {
+			font-size: 2.5cqw !important;
+			font-weight: 400;
+			letter-spacing: 0.02em;
+		}
+	}
+
+	@container (max-width: 400px) {
+		.hud-box {
+			/* 181px x 43px -> 9.43vw x 3.98vh */
+			width: 25vw;
+			height: 5vh;
+			background-size: 100% 100%;
+			display: inline-flex;
+			align-items: center;
+		}
+
+		.left-icon {
+			width: 4.5cqw !important;
+			height: 4.5cqw !important;
+		}
+
+		.icon-button {
+			width: 22.5cqw !important;
+			height: 25cqw !important;
+		}
+
+		.value {
+			font-size: 4.8cqw !important;
+			font-weight: 400;
+			letter-spacing: 0.02em;
+		}
 	}
 </style>

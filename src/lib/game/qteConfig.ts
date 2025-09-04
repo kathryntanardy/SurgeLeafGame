@@ -43,15 +43,15 @@ export const qteConfigByPlant: Record<string, QTEConfig> = {
     plant4: {
         duration: 2.0,
         count: 3,
-        major: 0.05,
-        minor: 0.05,
+        major: 0.25,
+        minor: 0.35,
         majorMod: 1.0,
         minorMod: 1.0,
         offsetYcqh: -15
     },
     // Carrot
     plant5: {
-        duration: 3.2,
+        duration: 1.5,
         count: 3,
         major: 0.18,
         minor: 0.28,
@@ -61,7 +61,7 @@ export const qteConfigByPlant: Record<string, QTEConfig> = {
     },
     // Dandelion
     plant6: {
-        duration: 2.8,
+        duration: 2,
         count: 3,
         major: 0.20,
         minor: 0.30,

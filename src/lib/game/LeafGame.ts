@@ -80,7 +80,7 @@ const INITIAL_STATES: Record<string, Stock> = {
     bucket3: Stock.Default,
     bucket4: Stock.Available,
     bucket5: Stock.Default,
-    bucket6: Stock.Default
+    bucket6: Stock.Default,
 };
 
 export const plantArray = writable<Record<string, plantInfo>>(

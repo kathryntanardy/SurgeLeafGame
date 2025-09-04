@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { Stock, game } from '$lib/game/LeafGame';
+	import { isMobile } from '$lib/layout';
 	type PlantMeta = {
 		key: string;
 		imageSrc: string;
 		position: { left?: string; top?: string; width: string; transform?: string };
+		mobilePosition?: { width: string; transform?: string };
 	};
 	export let plant: PlantMeta;
 	export let bucketState: Stock;
@@ -15,7 +17,12 @@
 	$: isOut = bucketState === Stock.OutOfStock;
 	$: posLeft = basePosition?.left ?? plant.position.left;
 	$: posTop = basePosition?.top ?? plant.position.top;
-	$: imgTransform = plant.position.transform ?? '';
+	$: imgTransform =
+		($isMobile && plant.mobilePosition
+			? plant.mobilePosition.transform
+			: plant.position.transform) ?? '';
+	$: widthVal =
+		$isMobile && plant.mobilePosition ? plant.mobilePosition.width : plant.position.width;
 </script>
 
 <img
@@ -25,7 +32,7 @@
 	class:overBucket={plant.key === 'plant2'}
 	class:overPlant2={plant.key === 'plant5'}
 	class:disabled={isOut}
-	style="left:{posLeft}; top:{posTop}; width:{plant.position.width}; transform:{imgTransform}"
+	style="left:{posLeft}; top:{posTop}; width:{widthVal}; transform:{imgTransform}"
 	draggable="false"
 	on:click={() => isAvailable && dispatch('click')}
 />

@@ -1,5 +1,3 @@
-//TODO: Modify code 
-
 export interface BucketPosition {
     left: string;
     top: string;
@@ -18,6 +16,7 @@ export interface BucketData {
     images: BucketImages;
     altText: string;
     position: BucketPosition;
+    mobilePosition?: BucketPosition;
     availablePosition?: BucketPosition; // optional alternate position when Available
 }
 
@@ -35,6 +34,11 @@ export const bucketData: BucketData[] = [
             left: '30%',
             top: '61.13%',
             width: '7%'
+        },
+        mobilePosition: {
+            left: '12%',
+            top: '58%',
+            width: '15%'
         }
     },
     {
@@ -50,6 +54,11 @@ export const bucketData: BucketData[] = [
             left: '38%',
             top: '75%',
             width: '5%'
+        },
+        mobilePosition: {
+            left: '25%',
+            top: '67.5%',
+            width: '12%'
         }
     },
     {
@@ -65,6 +74,11 @@ export const bucketData: BucketData[] = [
             left: '42%',
             top: '55%',
             width: '6.5%'
+        },
+        mobilePosition: {
+            left: '34%',
+            top: '50%',
+            width: '13%'
         }
     },
     {
@@ -80,6 +94,11 @@ export const bucketData: BucketData[] = [
             left: '58%',
             top: '63%',
             width: '4.2%'
+        },
+        mobilePosition: {
+            left: '65%',
+            top: '50%',
+            width: '10%'
         }
     },
     {
@@ -95,6 +114,11 @@ export const bucketData: BucketData[] = [
             left: '63%',
             top: '79.28%',
             width: '9%'
+        },
+        mobilePosition: {
+            left: '72%',
+            top: '70%',
+            width: '25%'
         }
     },
     {
@@ -110,6 +134,11 @@ export const bucketData: BucketData[] = [
             left: '70%',
             top: '68%',
             width: '6.5%'
+        },
+        mobilePosition: {
+            left: '88%',
+            top: '58%',
+            width: '20%'
         }
     }
 ];

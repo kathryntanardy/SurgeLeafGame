@@ -5,6 +5,7 @@
 	import Customer from '$lib/components/Customer.svelte';
 	import ShopModal from '$lib/components/ShopModal.svelte';
 	import QTE from '$lib/components/QTE.svelte';
+	import { observeLayout, isMobile } from '$lib/layout';
 	import {
 		OrderStatus,
 		orderEntities,
@@ -97,15 +98,21 @@
 	{/if}
 {/if}
 
-<div class="background">
-	<img src="/background.png" alt="Background" class="background-image" />
+<div class="background" use:observeLayout>
+	{#if $isMobile}
+		<img src="/background_mobile.png" alt="Background" class="background-image" />
+	{:else}
+		<img src="/background.png" alt="Background" class="background-image" />
+	{/if}
 
 	<!-- Vignette overlay -->
 	<div class="vignette" aria-hidden="true"></div>
 
 	<!-- Corner overlays -->
-	<img src="/left.png" alt="" class="edge edge-left" aria-hidden="true" />
-	<img src="/right.png" alt="" class="edge edge-right" aria-hidden="true" />
+	{#if !$isMobile}
+		<img src="/left.png" alt="" class="edge edge-left" aria-hidden="true" />
+		<img src="/right.png" alt="" class="edge edge-right" aria-hidden="true" />
+	{/if}
 
 	{#each bucketData as bucket (bucket.id)}
 		<Bucket {bucket} />
@@ -173,10 +180,6 @@
 			/>
 		</div>
 	{/if}
-
-	<!-- <div class="tempqte">
-		<QTE config={sampleConfig} onQTE={someFunction} />
-	</div> -->
 </div>
 
 <style>
@@ -271,6 +274,23 @@
 
 		100% {
 			background-position: calc(-100% + 99vw) 0;
+		}
+	}
+
+	@container (max-width: 640px) {
+		.mascot {
+			width: 30%;
+			left: 33%;
+			top: 43%;
+			z-index: 100;
+		}
+	}
+	@container (max-width: 400px) {
+		.mascot {
+			width: 43%;
+			left: 27%;
+			top: 43%;
+			z-index: 100;
 		}
 	}
 </style>
