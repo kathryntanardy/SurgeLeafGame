@@ -39,9 +39,10 @@
 	const translateY = `calc(-100% - ${orderGapY})`;
 	$: orderTop = top; // top is the customer's top; translation handles the gap
 
-	// Center order horizontally over the customer: left + (imageWidth/2) - (orderWidth/2)
-	// Order width uses responsive 4.5833vw (~88px @1920)
-	$: orderLeft = left && imageWidth ? `calc(${left} + (${imageWidth}) / 2 - 2.2916666667vw)` : left;
+	// Center order horizontally over the customer using the customer's width
+	// left + (imageWidth / 2), and let Order center itself via translateX(-50%)
+	$: orderLeftCenter = left && imageWidth ? `calc(${left} + (${imageWidth}) / 2)` : left;
+	$: orderTranslate = `translate(-50%, ${translateY})`;
 
 	const defaultMap: Record<OrderStatus, string> = {
 		[OrderStatus.InProgress]: '/customer/default.png',
@@ -64,18 +65,33 @@
 		plant5: '/icons/carrot.png',
 		plant6: '/icons/dandelion.png'
 	};
+
+	export let orderWidth: string | undefined = undefined;
+	export let orderTransform: string | undefined = undefined;
 </script>
 
 <!-- Order bubble/card: show normal order while in progress; show Thanks when provided -->
 {#if thanksAmount != null}
-	<Order left={orderLeft} top={orderTop} {translateY} progress={undefined}>
+	<Order
+		left={orderLeftCenter}
+		top={orderTop}
+		translate={orderTransform ?? orderTranslate}
+		progress={undefined}
+		style={orderWidth ? `--orderW:${orderWidth}` : undefined}
+	>
 		<div class="thanks-wrap">
 			<div class="thanks-title">Thanks!</div>
 			<div class="thanks-amount"><img src="/leafIcon.png" alt="" /> {thanksAmount}</div>
 		</div>
 	</Order>
 {:else if state === OrderStatus.InProgress}
-	<Order left={orderLeft} top={orderTop} {translateY} progress={timerRatio}>
+	<Order
+		left={orderLeftCenter}
+		top={orderTop}
+		translate={orderTransform ?? orderTranslate}
+		progress={timerRatio}
+		style={orderWidth ? `--orderW:${orderWidth}` : undefined}
+	>
 		{#if orderItems}
 			<div class="order-icons">
 				{#each Object.entries(orderItems) as [k, qty]}
@@ -164,12 +180,11 @@
 	}
 	.thanks-wrap {
 		display: grid;
-		gap: 0rem;
+		gap: 0.3rem;
 		place-items: center;
 	}
 	.thanks-title {
-		padding-top: 0.4rem;
-		font-size: 0.8cqw;
+		font-size: 1cqw;
 		font-weight: 400;
 	}
 	.thanks-amount {
@@ -182,5 +197,28 @@
 	.thanks-amount img {
 		width: 1cqw;
 		height: 1cqw;
+	}
+
+	@container (max-width: 640px) {
+		.customer {
+			width: 18% !important;
+			z-index: 0;
+		}
+
+		.customer-hit {
+			width: 18% !important;
+			z-index: 200;
+		}
+	}
+	@container (max-width: 400px) {
+		.customer {
+			width: 20% !important;
+			z-index: 0;
+		}
+
+		.customer-hit {
+			width: 20% !important;
+			z-index: 200;
+		}
 	}
 </style>

@@ -10,9 +10,9 @@
 	export let containerSrc: string = '/container.png'; // box background (from /static)
 	export let iconSrc: string | undefined = undefined; // left icon in display mode
 
-	// Sizes (viewport-relative). 
-	export let leftIconWidth: string | undefined = undefined; 
-	export let leftIconHeight: string | undefined = undefined; 
+	// Sizes (viewport-relative).
+	export let leftIconWidth: string | undefined = undefined;
+	export let leftIconHeight: string | undefined = undefined;
 	export let buttonWidth: string = '5.6vw';
 	export let buttonHeight: string = '2.2vh';
 
@@ -160,7 +160,7 @@
 		}
 
 		.value {
-			font-size: 4.8cqw !important;
+			font-size: 3.5cqw !important;
 			font-weight: 400;
 			letter-spacing: 0.02em;
 		}

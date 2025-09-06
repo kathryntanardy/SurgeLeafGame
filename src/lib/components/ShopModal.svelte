@@ -107,7 +107,7 @@
 	.dialog {
 		position: absolute;
 		left: 50%;
-		top: 8.6%; /* ~93 / 1080 of background height */
+		top: 8.6%;
 		transform: translateX(-50%);
 		width: 30%;
 		height: 80%;
@@ -208,5 +208,54 @@
 	.action-btn:disabled {
 		opacity: 0.5;
 		cursor: default;
+	}
+
+	@container (max-width: 640px) {
+		.dialog {
+			width: 90%;
+			height: 70%;
+		}
+
+		.inner-header h2 {
+			font-size: 3cqw;
+		}
+
+		.close {
+			font-size: 3cqw;
+		}
+
+		.plant-img {
+			max-height: 30cqh;
+		}
+
+		.action-btn {
+			width: 100%;
+		}
+	}
+
+	@container (max-width: 400px) {
+		.dialog {
+			width: 95%;
+			height: 50%;
+			left: 50%;
+			top: 20%;
+		}
+
+		.inner-header h2 {
+			font-size: 3cqw;
+		}
+
+		.close {
+			font-size: 3cqw;
+		}
+
+		.plant-img {
+			max-height: 28cqw;
+		}
+
+		.action-btn {
+			width: 100%;
+			height: 3cqw;
+		}
 	}
 </style>

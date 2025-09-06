@@ -28,6 +28,7 @@
 	style:top
 	style:transform={translate ? translate : translateY ? `translateY(${translateY})` : undefined}
 	data-progress={progress}
+	{...$$restProps}
 >
 	{#if text}
 		<p class="order-text">{text}</p>
@@ -46,13 +47,14 @@
 		position: absolute;
 		background: #fffccf;
 		border-radius: 0.5208333333vw; /* 10px @1920 */
-		padding: 0.4166666667vw 0.5208333333vw 0.9375vw; /* 8px 10px 18px @1920 */
-		width: 5%; /* 88px @1920 */
+		padding: 0.5vw 0.6vw 0.9375vw; /* 8px 10px 18px @1920 */
+		width: var(--orderW, 5%); /* default 88px @1920; overridable via CSS var */
 		font-family: sans-serif;
 		color: #6d6d6d;
 		font-size: 0.7291666667vw; /* 14px @1920 */
 		line-height: 1.3;
-		z-index: 5;
+		z-index: 0; /* do not cover plants */
+		pointer-events: none; /* allow clicks to pass to plants */
 	}
 	.order-text {
 		margin: 0;
@@ -73,5 +75,22 @@
 		height: 100%;
 		background: #7a5b73;
 		border-radius: 0;
+	}
+
+	@container (max-width: 640px) {
+		.mascot {
+			width: 30%;
+			left: 33%;
+			top: 43%;
+			z-index: 100;
+		}
+	}
+	@container (max-width: 400px) {
+		.mascot {
+			width: 43%;
+			left: 27%;
+			top: 43%;
+			z-index: 100;
+		}
 	}
 </style>

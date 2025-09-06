@@ -286,4 +286,16 @@
 		z-index: 20;
 		pointer-events: none;
 	}
+
+	@container (max-width: 640px) {
+		.qteContainer {
+			--container-size: 14cqw;
+		}
+	}
+
+	@container (max-width: 400px) {
+		.qteContainer {
+			--container-size: 15cqw;
+		}
+	}
 </style>

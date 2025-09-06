@@ -1,10 +1,11 @@
 <script lang="ts">
 	import HudBox from './HudBox.svelte';
-	import { scoreStore } from '$lib/game/LeafGame';
+	import { scoreStore, gamePhase } from '$lib/game/LeafGame';
 
-	// TODO: Add timer and score functionality, clickable shop button.
 	export let timerText: string = '00:00';
 	export let onOpenModal;
+	export let onStartGame: (() => void) | undefined;
+	export let onRestartGame: (() => void) | undefined;
 </script>
 
 <div class="center-strip">
@@ -23,7 +24,13 @@
 			leftIconWidth="1.04vw"
 			leftIconHeight="1.04vw"
 		/>
-		<HudBox mode="button" onClick={onOpenModal} />
+		{#if $gamePhase === 'pre'}
+			<HudBox mode="button" onClick={onStartGame} />
+		{:else if $gamePhase === 'ended'}
+			<HudBox mode="button" onClick={onRestartGame} />
+		{:else}
+			<HudBox mode="button" onClick={onOpenModal} />
+		{/if}
 	</div>
 </div>
 
@@ -55,5 +62,4 @@
 			padding: 0 3cqw;
 		}
 	}
-	
 </style>

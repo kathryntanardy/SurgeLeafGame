@@ -5,7 +5,7 @@
 	import Customer from '$lib/components/Customer.svelte';
 	import ShopModal from '$lib/components/ShopModal.svelte';
 	import QTE from '$lib/components/QTE.svelte';
-	import { observeLayout, isMobile } from '$lib/layout';
+	import { observeLayout, isMobile, isNarrow } from '$lib/layout';
 	import {
 		OrderStatus,
 		orderEntities,
@@ -15,11 +15,18 @@
 		mascotFrame,
 		nowStore,
 		ORDER_DEFAULT_DURATION_MS,
+		GAME_DURATION_MS,
 		activeQTESession,
 		ENABLE_QTE,
-		thanksToasts
+		thanksToasts,
+		gamePhase,
+		gameEndsAt,
+		scoreStore
 	} from '$lib/game/LeafGame';
 	import { Stock } from '$lib/game/LeafGame';
+	import { customerSlots } from '$lib/game/customerData';
+	import InstructionsModal from './InstructionsModal.svelte';
+	import EndingModal from './EndingModal.svelte';
 
 	let shopOpen: boolean = false;
 	function onOpenModal() {
@@ -51,8 +58,22 @@
 			.map(([k, qty]) => `${k} x${qty}`)
 			.join(', ');
 
-	const leftFor = (i: number) => (i === 0 ? '32%' : i === 1 ? '47%' : '60%');
-	const topFor = (i: number) => (i === 0 ? '25%' : i === 1 ? '22%' : '25%');
+	const pickPos = (i: number) => {
+		const slot = customerSlots[i];
+		if ($isNarrow) return slot.mobileNarrowPosition ?? slot.mobilePosition ?? slot.position;
+		if ($isMobile) return slot.mobilePosition ?? slot.position;
+		return slot.position;
+	};
+	const leftFor = (i: number) => pickPos(i).left;
+	const topFor = (i: number) => pickPos(i).top;
+	const widthFor = (i: number) => pickPos(i).width ?? '8%';
+	const gapFor = (i: number) => {
+		const slot = customerSlots[i];
+		if ($isNarrow)
+			return slot.mobileNarrowOrderGapY ?? slot.mobileOrderGapY ?? slot.orderGapY ?? '5%';
+		if ($isMobile) return slot.mobileOrderGapY ?? slot.orderGapY ?? '5%';
+		return slot.orderGapY ?? '5%';
+	};
 
 	// Compute a dynamic vertical gap for the order bubble based on remaining TYPES (icons)
 	// Fewer types remaining -> bubble closer to customer
@@ -76,6 +97,20 @@
 		return msLeft / total;
 	};
 
+	// Global session countdown text (MM:SS)
+	$: sessionTimeLeftMs =
+		$gamePhase === 'running' && $gameEndsAt
+			? Math.max(0, $gameEndsAt - $nowStore)
+			: $gamePhase === 'ended'
+				? 0
+				: GAME_DURATION_MS;
+	function fmt(ms: number) {
+		const s = Math.floor(ms / 1000);
+		const mm = String(Math.floor(s / 60)).padStart(2, '0');
+		const ss = String(s % 60).padStart(2, '0');
+		return `${mm}:${ss}`;
+	}
+
 	// const sampleConfig = {
 	// 	duration: 2.5,
 	// 	count: 3,
@@ -86,6 +121,23 @@
 	// };
 
 	// function someFunction() {}
+
+	const orderWidthFor = (i: number) => {
+		const slot = customerSlots[i];
+		if ($isNarrow) return slot.mobileNarrowOrderWidth ?? slot.mobileOrderWidth ?? slot.orderWidth;
+		if ($isMobile) return slot.mobileOrderWidth ?? slot.orderWidth;
+		return slot.orderWidth;
+	};
+
+	const orderTransformFor = (i: number, baseTranslate: string) => {
+		const slot = customerSlots[i];
+		const t = $isNarrow
+			? (slot.mobileNarrowOrderTransform ?? slot.mobileOrderTransform ?? slot.orderTransform)
+			: $isMobile
+				? (slot.mobileOrderTransform ?? slot.orderTransform)
+				: slot.orderTransform;
+		return t ?? baseTranslate;
+	};
 </script>
 
 <!-- Cancel QTE if plant state changes mid-session -->
@@ -132,6 +184,9 @@
 					hurry={ent.hurry}
 					left={leftFor(i)}
 					top={topFor(i)}
+					imageWidth={widthFor(i)}
+					orderWidth={orderWidthFor(i)}
+					orderTransform={orderTransformFor(i, '')}
 					mirror={i === 0}
 					thanksAmount={$thanksToasts.find((t) => t.slotIdx === i)?.amount ?? null}
 					on:click={() => game.deliverPlant(ent.id)}
@@ -150,11 +205,24 @@
 		<img src="/mascot/default_frame1.png" alt="Mascot" class="mascot" />
 	{/if}
 
-	<!-- Center HUD strip (timer, score, view shop) -->
-	<CenterStrip {onOpenModal} />
+	<!-- Center HUD strip (timer, score, start/shop/restart button) -->
+	<CenterStrip
+		onOpenModal={$gamePhase === 'running' ? onOpenModal : undefined}
+		timerText={fmt(sessionTimeLeftMs)}
+		onStartGame={() => game.startGame()}
+		onRestartGame={() => game.startGame()}
+	/>
 
 	{#if shopOpen}
 		<ShopModal {plantsStore} {game} on:close={onCloseModal} on:restock={onRestockFromShop} />
+	{/if}
+
+	{#if $gamePhase === 'pre'}
+		<InstructionsModal onStart={() => game.startGame()} />
+	{/if}
+
+	{#if $gamePhase === 'ended'}
+		<EndingModal score={$scoreStore} onRestart={() => game.startGame()} />
 	{/if}
 
 	{#if ENABLE_QTE && $activeQTESession}

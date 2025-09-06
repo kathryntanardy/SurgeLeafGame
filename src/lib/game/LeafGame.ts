@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import { plantData } from '$lib/game/plantData';
+import { bucketData } from '$lib/game/bucketData';
 import type { QTEConfig } from '$lib/game/qteConfig';
 import { qteConfigByPlant } from '$lib/game/qteConfig';
 
@@ -8,6 +9,11 @@ export type Order = Record<string, number>;
 export const scoreStore = writable(0);
 export const queuedOrdersStore = writable<Order[]>([]);
 export const currentOrderStore = writable<Order>({});
+
+// Game session (pre → running → ended)
+export type GamePhase = 'pre' | 'running' | 'ended';
+export const gamePhase = writable<GamePhase>('pre');
+export const gameEndsAt = writable<number | null>(null);
 
 // Stock: Availability of plants 
 export enum Stock {
@@ -119,6 +125,8 @@ export const CUSTOMER_REMAIN_IN_SCREEN = 5_000;
 export const MASCOT_SUCCESS_MS = 3_000;
 // How long the mascot should show failure after an order fails
 export const MASCOT_FAILURE_MS = 2_000;
+// Total session duration (2 minutes)
+export const GAME_DURATION_MS = 120_000;
 
 // Rollback boolean
 export const ENABLE_QTE = true;
@@ -147,7 +155,7 @@ export class LeafGame {
         const plants = Object.values(get(plantArray));
         this.unlockedKeys = plants.filter((p) => p.state === Stock.Available).map((p) => p.key);
 
-        this.addOrder();
+        // Periodically try to add orders while the game is running
         setInterval(() => {
             this.addOrder();
         }, 3000);
@@ -157,6 +165,7 @@ export class LeafGame {
             this.nowTimerId = (setInterval(() => {
                 nowStore.set(Date.now());
                 this.updateTimers();
+                this.checkGameSessionEnd();
             }, NOW_TICK_MS) as unknown) as number;
         }
 
@@ -165,6 +174,8 @@ export class LeafGame {
     }
 
     addOrder(): void {
+        // Only generate orders during active session
+        if (get(gamePhase) !== 'running') return;
         // Require a free slot
         const slots = get(displaySlots);
         const freeIdx = slots.indexOf(null);
@@ -334,6 +345,7 @@ export class LeafGame {
 
     // Plant Click: select plant for pending delivery 
     plantClick(key: string): void {
+        if (get(gamePhase) !== 'running') return;
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.Available) return;
         tempSelectedPlant.set(key);
@@ -357,7 +369,16 @@ export class LeafGame {
         // Convert plant width (% of container width) to an approximate height in cqh using 8/19 aspect ratio
         const approxHeightCqh = (widthNum * 8) / 19; // ~full plant height in cqh
         const cfg = qteConfigByPlant[plantKey] ?? DEFAULT_QTE_CONFIG;
-        const extraY = cfg.offsetYcqh ?? 0; // allow manual per-plant adjustment
+        // Use responsive offset based on screen size
+        let extraY = cfg.offsetYcqh ?? 0; // default offset
+        if (typeof window !== 'undefined') {
+            const width = window.innerWidth;
+            if (width <= 400) {
+                extraY = cfg.offsetYcqh400 ?? extraY;
+            } else if (width <= 640) {
+                extraY = cfg.offsetYcqh640 ?? extraY;
+            }
+        }
         const transformCss = `translate(-50%, 0) translateY(-${approxHeightCqh - extraY}cqh)`;
         const config = cfg;
         return {
@@ -371,36 +392,34 @@ export class LeafGame {
     }
 
     private getBucketLeftPct(bucketId: number): string {
-        // Fallback: derive from known bucket positions in bucketData only in UI; here we use a rough map
-        // Since LeafGame does not import bucketData to avoid tight coupling, we approximate via plantData id mapping.
-        // Background/Bucket use exact bucketData; the overlay will ultimately be positioned there.
-        // Return percent string to be applied in UI.
-        // Note: Actual alignment will be done in the UI using bucketData; this fallback keeps type usage local.
-        switch (bucketId) {
-            case 1: return '30%';
-            case 2: return '38%';
-            case 3: return '42%';
-            case 4: return '58%';
-            case 5: return '63%';
-            case 6: return '70%';
-            default: return '50%';
-        }
+        const bucket = bucketData.find(b => b.id === bucketId);
+        if (!bucket) return '50%';
+
+        // Check if we're on mobile
+        const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+
+        // Use mobile position if available and on mobile, otherwise use desktop position
+        return isMobile && bucket.mobilePosition
+            ? bucket.mobilePosition.left
+            : bucket.position.left;
     }
 
     private getBucketTopPct(bucketId: number): string {
-        switch (bucketId) {
-            case 1: return '61.13%';
-            case 2: return '75%';
-            case 3: return '55%';
-            case 4: return '63%';
-            case 5: return '79.28%';
-            case 6: return '68%';
-            default: return '50%';
-        }
+        const bucket = bucketData.find(b => b.id === bucketId);
+        if (!bucket) return '50%';
+
+        // Check if we're on mobile
+        const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
+
+        // Use mobile position if available and on mobile, otherwise use desktop position
+        return isMobile && bucket.mobilePosition
+            ? bucket.mobilePosition.top
+            : bucket.position.top;
     }
 
     // Customer Click: deliver selected plant to a specific order
     deliverPlant(orderId: number): void {
+        if (get(gamePhase) !== 'running') return;
         const key = get(tempSelectedPlant);
         if (!key) return;
 
@@ -487,6 +506,7 @@ export class LeafGame {
 
     // Restock: Out of Stock -> Available
     restockPlant(key: string): void {
+        if (get(gamePhase) !== 'running') return;
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
         plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
@@ -494,6 +514,7 @@ export class LeafGame {
 
     // Restock with multiplier persistence
     restockPlantWithMultiplier(key: string, multiplier: number): void {
+        if (get(gamePhase) !== 'running') return;
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
         const safeMult = Number.isFinite(multiplier) ? Math.max(0, multiplier) : 1;
@@ -505,6 +526,7 @@ export class LeafGame {
 
     // Unlock: Default -> Available, cost = plant.points (plant 4 free)
     unlockPlant(key: string): void {
+        if (get(gamePhase) !== 'running') return;
         const plant = get(plantArray)[key];
         if (!plant) return;
         if (plant.state !== Stock.Default) return;
@@ -517,6 +539,38 @@ export class LeafGame {
         plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
         // Track unlocked key for future order generation
         if (!this.unlockedKeys.includes(key)) this.unlockedKeys.push(key);
+    }
+
+    // ---- Game session control ----
+    startGame(): void {
+        // Reset score and clear any existing orders/slots
+        scoreStore.set(0);
+        orderEntities.set({});
+        displaySlots.set([null, null, null]);
+        // Reset all plants to their initial stock/multiplier
+        const initial = get(plantArray);
+        const reset = Object.fromEntries(Object.values(initial).map((p) => {
+            const initialState = (INITIAL_STATES[p.bucketKey] ?? Stock.Available);
+            return [p.key, { ...p, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0, scoreMultiplier: 1 }];
+        }));
+        plantArray.set(reset as Record<string, plantInfo>);
+        // Rebuild unlocked keys list
+        const plants = Object.values(get(plantArray));
+        this.unlockedKeys = plants.filter((p) => p.state === Stock.Available).map((p) => p.key);
+        // Start phase
+        gamePhase.set('running');
+        const ends = Date.now() + GAME_DURATION_MS;
+        gameEndsAt.set(ends);
+    }
+
+    private checkGameSessionEnd(): void {
+        const phase = get(gamePhase);
+        if (phase !== 'running') return;
+        const endsAt = get(gameEndsAt);
+        if (endsAt == null) return;
+        if (Date.now() >= endsAt) {
+            gamePhase.set('ended');
+        }
     }
 }
 
