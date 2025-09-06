@@ -11,16 +11,15 @@ export interface CustomerSlot {
     orderGapY?: string;              // desktop bubble gap, e.g., '5%'
     mobileOrderGapY?: string;        // mobile bubble gap, e.g., '6%'
     mobileNarrowOrderGapY?: string;  // extra-narrow bubble gap
-    // Optional order bubble width and transform overrides per breakpoint
     orderWidth?: string;
     mobileOrderWidth?: string;
     mobileNarrowOrderWidth?: string;
-    orderTransform?: string;           // full CSS transform string
+    orderTransform?: string;           
     mobileOrderTransform?: string;
     mobileNarrowOrderTransform?: string;
 }
 
-// EDIT THESE VALUES to manually place customers (and bubble gaps) per slot
+// Customer manual positioning
 export const customerSlots: CustomerSlot[] = [
     {
         position: { left: '32%', top: '25%', width: '8%' },

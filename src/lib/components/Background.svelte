@@ -16,7 +16,7 @@
 		nowStore,
 		ORDER_DEFAULT_DURATION_MS,
 		GAME_DURATION_MS,
-		activeQTESession,
+		activeQTESessions,
 		ENABLE_QTE,
 		thanksToasts,
 		gamePhase,
@@ -37,27 +37,16 @@
 		shopOpen = false;
 	}
 
-	// Reactive QTE session that recalculates position when layout changes
-	const reactiveQTESession = derived(
-		[activeQTESession, isMobile, isNarrow],
-		([session, mobile, narrow]) => {
-			if (!session) return null;
-			// Recalculate position when layout changes
-			return game.recalculateQTEPosition(session.plantKey);
-		}
-	);
+	// Use active sessions directly with derived store for better stability
+	const reactiveQTESessions = derived(activeQTESessions, (sessions) => sessions);
 
 	function onRestockFromShop(e: CustomEvent<{ plantKey: string }>) {
 		const { plantKey } = e.detail;
-		// Close modal first
 		onCloseModal();
-		// Next microtask: either start QTE or call legacy restock
 		queueMicrotask(() => {
 			if (ENABLE_QTE) {
-				// Prevent multiple simultaneous QTE sessions
-				if ($activeQTESession) return;
-				const session = game.deriveQTESessionFor(plantKey);
-				if (session) activeQTESession.set(session);
+				// Try to start a new QTE session (limited to 2 concurrent)
+				game.startQTESession(plantKey);
 			} else {
 				game.restockPlant(plantKey);
 			}
@@ -79,29 +68,7 @@
 	$: leftFor = (i: number) => pickPos(i).left;
 	$: topFor = (i: number) => pickPos(i).top;
 	$: widthFor = (i: number) => pickPos(i).width ?? '8%';
-	$: gapFor = (i: number) => {
-		const slot = customerSlots[i];
-		if ($isNarrow)
-			return slot.mobileNarrowOrderGapY ?? slot.mobileOrderGapY ?? slot.orderGapY ?? '5%';
-		if ($isMobile) return slot.mobileOrderGapY ?? slot.orderGapY ?? '5%';
-		return slot.orderGapY ?? '5%';
-	};
 
-	// Compute a dynamic vertical gap for the order bubble based on remaining TYPES (icons)
-	// Fewer types remaining -> bubble closer to customer
-	const orderGapFor = (ent: {
-		requestedPlants: Record<string, number>;
-		deliveredPlants: Record<string, number>;
-	}) => {
-		const typesRemaining = Object.keys(ent.requestedPlants ?? {}).length;
-		const maxGapVh = 1.2; // when many types remain
-		const minGapVh = 0.1; // when only one type remains
-		if (typesRemaining <= 1) return `${minGapVh}vh`;
-		if (typesRemaining === 2) return `${(maxGapVh + minGapVh) / 2}vh`;
-		return `${maxGapVh}vh`;
-	};
-
-	// Compute a 0..1 ratio of remaining time for timer UI
 	const timerRatioFor = (ent: { expiresAtMs?: number; totalDurationMs?: number }) => {
 		const total = ent.totalDurationMs ?? ORDER_DEFAULT_DURATION_MS;
 		if (!ent.expiresAtMs || !total) return undefined;
@@ -123,17 +90,6 @@
 		return `${mm}:${ss}`;
 	}
 
-	// const sampleConfig = {
-	// 	duration: 2.5,
-	// 	count: 3,
-	// 	major: 0.2,
-	// 	minor: 0.35,
-	// 	majorMod: 1.0,
-	// 	minorMod: 0.5
-	// };
-
-	// function someFunction() {}
-
 	$: orderWidthFor = (i: number) => {
 		const slot = customerSlots[i];
 		if ($isNarrow) return slot.mobileNarrowOrderWidth ?? slot.mobileOrderWidth ?? slot.orderWidth;
@@ -152,14 +108,15 @@
 	};
 </script>
 
-<!-- Cancel QTE if plant state changes mid-session -->
-{#if ENABLE_QTE && $activeQTESession}
-	{#if $plantsStore[$activeQTESession.plantKey] && $plantsStore[$activeQTESession.plantKey].state !== Stock.OutOfStock}
-		{@html (() => {
-			activeQTESession.set(null);
-			return '';
-		})()}
-	{/if}
+{#if ENABLE_QTE && $activeQTESessions.length > 0}
+	{#each $activeQTESessions as session}
+		{#if $plantsStore[session.plantKey] && $plantsStore[session.plantKey].state !== Stock.OutOfStock}
+			{@html (() => {
+				game.endQTESession(session.plantKey);
+				return '';
+			})()}
+		{/if}
+	{/each}
 {/if}
 
 <div class="background" use:observeLayout>
@@ -170,15 +127,15 @@
 	{/if}
 
 	<!-- Rays overlay -->
-	<img src="/shop_restock/rays.png" alt="" class="rays" aria-hidden="true" />
+	<img src="/shop_restock/rays.png" alt="" class="rays" />
 
 	<!-- Vignette overlay -->
-	<div class="vignette" aria-hidden="true"></div>
+	<div class="vignette"></div>
 
 	<!-- Corner overlays -->
 	{#if !$isMobile}
-		<img src="/left.png" alt="" class="edge edge-left" aria-hidden="true" />
-		<img src="/right.png" alt="" class="edge edge-right" aria-hidden="true" />
+		<img src="/left.png" alt="" class="edge edge-left" />
+		<img src="/right.png" alt="" class="edge edge-right" />
 	{/if}
 
 	{#each bucketData as bucket (bucket.id)}
@@ -194,7 +151,6 @@
 					state={ent.status as OrderStatus}
 					orderText={toText(ent)}
 					orderItems={ent.requestedPlants}
-					orderGapY={orderGapFor(ent)}
 					timerRatio={timerRatioFor(ent)}
 					hurry={ent.hurry}
 					left={leftFor(i)}
@@ -220,7 +176,6 @@
 		<img src="/mascot/default_frame1.png" alt="Mascot" class="mascot" />
 	{/if}
 
-	<!-- Center HUD strip (timer, score, start/shop/restart button) -->
 	<CenterStrip
 		onOpenModal={$gamePhase === 'running' ? onOpenModal : undefined}
 		timerText={fmt(sessionTimeLeftMs)}
@@ -240,28 +195,32 @@
 		<EndingModal score={$scoreStore} onRestart={() => game.startGame()} />
 	{/if}
 
-	{#if ENABLE_QTE && $reactiveQTESession}
-		<!-- Dimmer to block clicks elsewhere while QTE is active -->
-		<div class="qte-dimmer" aria-hidden="true"></div>
-		<!-- QTE overlay centered using plant's left/top and transform -->
-		<div
-			class="qte-overlay"
-			style="left: {$reactiveQTESession.leftPct}; top: {$reactiveQTESession.topPct}; transform: {$reactiveQTESession.transformCss ??
-				'none'}"
-		>
-			<QTE
-				config={$reactiveQTESession.config}
-				attempts={3}
-				onQTE={() => {}}
-				onDone={(successes) => {
-					const s = Math.max(0, Math.min(3, Number(successes) || 0));
-					const multiplier = s === 0 ? 0.5 : s === 1 ? 1.0 : s === 2 ? 1.5 : 3.0;
-					const plantKey = $reactiveQTESession?.plantKey;
-					if (plantKey) game.restockPlantWithMultiplier(plantKey, multiplier);
-					activeQTESession.set(null);
-				}}
-			/>
-		</div>
+	{#if ENABLE_QTE && $reactiveQTESessions.length > 0}
+		<!-- QTE overlays for each active session (no global dimmer) -->
+		{#each $reactiveQTESessions as session (session.id)}
+			{#if session}
+				<div
+					class="qte-overlay"
+					style="left: {session.leftPct}; top: {session.topPct}; transform: {session.transformCss ??
+						'none'}"
+				>
+					<QTE
+						config={session.config}
+						attempts={3}
+						onQTE={() => {}}
+						onDone={(successes) => {
+							const s = Math.max(0, Math.min(3, Number(successes) || 0));
+							const multiplier = s === 0 ? 0.5 : s === 1 ? 1.0 : s === 2 ? 1.5 : 3.0;
+							const plantKey = session.plantKey;
+							if (plantKey) {
+								game.restockPlantWithMultiplier(plantKey, multiplier);
+								game.endQTESession(plantKey);
+							}
+						}}
+					/>
+				</div>
+			{/if}
+		{/each}
 	{/if}
 </div>
 
@@ -313,7 +272,6 @@
 	.edge {
 		position: absolute;
 		bottom: 0;
-		/* height: auto; */
 	}
 
 	.edge-left {

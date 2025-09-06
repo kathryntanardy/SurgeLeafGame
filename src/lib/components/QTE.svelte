@@ -1,16 +1,16 @@
 <script module lang="ts">
 	export interface QTEProps {
 		onQTE: (val: number) => void;
-		onDone?: (successes: number) => void; // fires after attempts are exhausted
-		attempts?: number; // number of clicks in a session (default 3)
-		sizeCqw?: number; // optional: size in cqw; height equals width
+		onDone?: (successes: number) => void;
+		attempts?: number;
+		sizeCqw?: number;
 		config: {
-			duration: number; // how long is the entire qte circle, in s
-			count: number; // how many hot spots
+			duration: number;
+			count: number;
 			major: number;
-			minor: number; // duration of the major and minor modifier, in s.
+			minor: number;
 			majorMod: number;
-			minorMod: number; // multiplier for hitting major or minor
+			minorMod: number;
 		};
 	}
 </script>
@@ -18,7 +18,12 @@
 <script lang="ts">
 	let { onQTE, onDone, attempts = 3, sizeCqw, config }: QTEProps = $props();
 
-	// Do not mutate incoming config; build arcs from a local counter
+	// -------- geometry constants (single source of truth) ----------
+	const RADIUS_INSET_FRAC = 0.01875; // 1.5px on an 80px button
+	const THICKNESS_FRAC = 0.125; // 10px on an 80px button
+	const MIN_THICKNESS_PX = 6; // don’t let it get too thin
+
+	// Random hotspots (unchanged)
 	let arcs = $derived.by(() => {
 		const _arcs: number[] = [];
 		let tries = 100;
@@ -41,6 +46,7 @@
 		return _arcs;
 	});
 
+	// Timer (unchanged)
 	let timer = $state(0);
 	let rafId: number | null = null;
 	let clicks = $state(0);
@@ -61,7 +67,7 @@
 		};
 	});
 
-	// Dynamic geometry based on actual button size (px)
+	// Button size tracking (unchanged)
 	let btnRef: HTMLButtonElement | null = null;
 	let btnSizePx = $state(80);
 	$effect(() => {
@@ -74,47 +80,82 @@
 		return () => ro.disconnect();
 	});
 
-	function buildArc(center: number, range: number) {
-		const centerOffset = btnSizePx / 2;
-		// Scale from original baseline (80px button): radius ≈ 38.5px → centerOffset - 1.5px (1.5/80)
-		const RADIUS_INSET_FRAC = 0.01875;
-		// Thickness 10px on 80px → 0.125
-		const THICKNESS_FRAC = 0.125;
-		const thickness = Math.max(6, btnSizePx * THICKNESS_FRAC);
-		const radius = Math.max(0, centerOffset - btnSizePx * RADIUS_INSET_FRAC);
-		let out = '';
-		const ca = (center / config.duration) * Math.PI * 2;
-		const ra = (range / config.duration) * Math.PI * 2;
-		out += `M ${centerOffset + Math.sin(ca - ra) * radius} ${centerOffset - Math.cos(ca - ra) * radius} `;
-		out += `A ${radius} ${radius} 0 0 1 ${centerOffset + Math.sin(ca + ra) * radius} ${centerOffset - Math.cos(ca + ra) * radius} `;
-		out += `L ${centerOffset + Math.sin(ca + ra) * (radius - thickness)} ${centerOffset - Math.cos(ca + ra) * (radius - thickness)}`;
-		out += `A ${radius - thickness} ${radius - thickness} 0 0 0 ${centerOffset + Math.sin(ca - ra) * (radius - thickness)} ${centerOffset - Math.cos(ca - ra) * (radius - thickness)} `;
-		return out;
+	// ---- unified geometry helper (used by both ring and arcs) ----
+	function getGeom() {
+		const center = btnSizePx / 2;
+
+		const thickness = Math.max(MIN_THICKNESS_PX, btnSizePx * THICKNESS_FRAC);
+		const outerR = Math.max(0, center - btnSizePx * RADIUS_INSET_FRAC);
+		const innerR = Math.max(0, outerR - thickness);
+
+		return { center, outerR, innerR, thickness };
 	}
 
-	// Build a full donut ring path that matches the arc band geometry
-	function buildRingPath() {
-		const centerOffset = btnSizePx / 2;
-		const RADIUS_INSET_FRAC = 0.01875; // 1.5/80
-		const THICKNESS_FRAC = 0.125; // 10/80
-		const outerR = Math.max(0, centerOffset - btnSizePx * RADIUS_INSET_FRAC);
-		const innerR = Math.max(0, outerR - btnSizePx * THICKNESS_FRAC);
+	// Build a donut segment centered at `center` with half-range `range`
+	function buildArc(centerTime: number, rangeTime: number) {
+		const { center, outerR, innerR } = getGeom();
 
-		let out = '';
-		// Start at angle 0 on outer radius
+		// Convert time to angle (12 o’clock = 0°, clockwise)
+		const ca = (centerTime / config.duration) * Math.PI * 2;
+		const ra = (rangeTime / config.duration) * Math.PI * 2;
+
+		// Endpoints on the outer radius
+		const ax0 = center + Math.sin(ca - ra) * outerR;
+		const ay0 = center - Math.cos(ca - ra) * outerR;
+		const ax1 = center + Math.sin(ca + ra) * outerR;
+		const ay1 = center - Math.cos(ca + ra) * outerR;
+
+		// Endpoints on the inner radius
+		const ix1 = center + Math.sin(ca + ra) * innerR;
+		const iy1 = center - Math.cos(ca + ra) * innerR;
+		const ix0 = center + Math.sin(ca - ra) * innerR;
+		const iy0 = center - Math.cos(ca - ra) * innerR;
+
+		// Large-arc flag if sweep > 180°
+		const largeArc = 2 * ra > Math.PI ? 1 : 0;
+
+		let d = '';
+		d += `M ${ax0} ${ay0} `;
+		d += `A ${outerR} ${outerR} 0 ${largeArc} 1 ${ax1} ${ay1} `;
+		d += `L ${ix1} ${iy1} `;
+		d += `A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix0} ${iy0} `;
+		d += 'Z';
+		return d;
+	}
+
+	// Full donut ring matching the same outer/inner radii
+	function buildRingPath() {
+		const { center, outerR, innerR } = getGeom();
+
+		// We draw outer full circle as two 180° arcs (A ... 0 1 1), then
+		// inner full circle reversed (A ... 0 1 0) to form a donut
 		const a0 = 0;
-		const a1 = Math.PI; // 180 deg
-		const a2 = Math.PI * 2; // 360 deg
-		out += `M ${centerOffset + Math.sin(a0) * outerR} ${centerOffset - Math.cos(a0) * outerR} `;
-		// Outer two half-arcs (clockwise)
-		out += `A ${outerR} ${outerR} 0 1 1 ${centerOffset + Math.sin(a1) * outerR} ${centerOffset - Math.cos(a1) * outerR} `;
-		out += `A ${outerR} ${outerR} 0 1 1 ${centerOffset + Math.sin(a2) * outerR} ${centerOffset - Math.cos(a2) * outerR} `;
-		// Join to inner radius
-		out += `L ${centerOffset + Math.sin(a2) * innerR} ${centerOffset - Math.cos(a2) * innerR} `;
-		// Inner two half-arcs (counter-clockwise to close)
-		out += `A ${innerR} ${innerR} 0 1 0 ${centerOffset + Math.sin(a1) * innerR} ${centerOffset - Math.cos(a1) * innerR} `;
-		out += `A ${innerR} ${innerR} 0 1 0 ${centerOffset + Math.sin(a0) * innerR} ${centerOffset - Math.cos(a0) * innerR} `;
-		return out;
+		const a1 = Math.PI;
+		const a2 = Math.PI * 2;
+
+		const ox0 = center + Math.sin(a0) * outerR;
+		const oy0 = center - Math.cos(a0) * outerR;
+		const ox1 = center + Math.sin(a1) * outerR;
+		const oy1 = center - Math.cos(a1) * outerR;
+		const ox2 = center + Math.sin(a2) * outerR;
+		const oy2 = center - Math.cos(a2) * outerR;
+
+		const ix2 = center + Math.sin(a2) * innerR;
+		const iy2 = center - Math.cos(a2) * innerR;
+		const ix1 = center + Math.sin(a1) * innerR;
+		const iy1 = center - Math.cos(a1) * innerR;
+		const ix0 = center + Math.sin(a0) * innerR;
+		const iy0 = center - Math.cos(a0) * innerR;
+
+		let d = '';
+		d += `M ${ox0} ${oy0} `;
+		d += `A ${outerR} ${outerR} 0 1 1 ${ox1} ${oy1} `;
+		d += `A ${outerR} ${outerR} 0 1 1 ${ox2} ${oy2} `;
+		d += `L ${ix2} ${iy2} `;
+		d += `A ${innerR} ${innerR} 0 1 0 ${ix1} ${iy1} `;
+		d += `A ${innerR} ${innerR} 0 1 0 ${ix0} ${iy0} `;
+		d += 'Z';
+		return d;
 	}
 
 	function finishIfNeeded() {
@@ -192,14 +233,10 @@
 
 	.qteContainer {
 		position: relative;
-
-		/* Map original ~90px container to 5.5cqw */
 		--container-size: 5.5cqw;
-		/* Original button was 80px inside 90px container → 80/90 ≈ 0.8889 */
 		--btn-size: calc(var(--container-size) * 0.8888889);
 		width: var(--container-size);
 		height: var(--container-size);
-
 		background-color: var(--bg-trans);
 		border-radius: 50%;
 	}
@@ -209,11 +246,9 @@
 		left: 50%;
 		top: 50%;
 		transform: translate(-50%, -50%);
-
 		background-color: var(--color);
 		width: var(--btn-size);
 		height: var(--btn-size);
-
 		clip-path: path(var(--path));
 	}
 
@@ -223,35 +258,15 @@
 		top: 50%;
 		transform: translate(-50%, -50%);
 		border-radius: 50%;
-
 		width: var(--btn-size);
 		height: var(--btn-size);
-
 		background-color: var(--bg);
-		/* Original 2px border at 80px → 2/80 = 0.025 */
-		border: calc(var(--btn-size) * 0.025) solid var(--border);
-
+		border: 0;
 		cursor: pointer;
 	}
 
-	/* inner ring */
 	.qteBtn::before {
-		content: '';
-
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
-
-		/* Make inner ring diameter smaller (increase subtraction factor) */
-		width: calc(100% - (var(--btn-size) * 0.22));
-		height: calc(100% - (var(--btn-size) * 0.22));
-
-		/* 2px at 80px → 0.025 */
-		border: calc(var(--btn-size) * 0.025) solid var(--border);
-		border-radius: 50%;
-
-		z-index: 5;
+		display: none;
 	}
 
 	.qteBtn::after {
@@ -261,27 +276,19 @@
 		top: 50%;
 		transform-origin: center;
 		transform: translate(-50%, -50%) rotate(var(--angle));
-
-		/* Sweep width 4px at 80px → 0.05; extra height +6px at 80px → 0.075 */
 		width: calc(var(--btn-size) * 0.05);
 		height: calc(100% + (var(--btn-size) * 0.075));
-
 		box-sizing: border-box;
-		/* 18px at 80px → 0.225 */
 		border-top: calc(var(--btn-size) * 0.225) solid var(--header);
-
 		z-index: 10;
 	}
 
 	.qteBtn > img {
-		/* Scale icon together with QTE size */
 		width: calc(var(--btn-size) * 0.5);
 		height: calc(var(--btn-size) * 0.5);
-
 		position: absolute;
 		left: 46%;
 		top: 47%;
-
 		transform: translate(-50%, -50%);
 		z-index: 20;
 		pointer-events: none;
@@ -292,7 +299,6 @@
 			--container-size: 14cqw;
 		}
 	}
-
 	@container (max-width: 400px) {
 		.qteContainer {
 			--container-size: 15cqw;

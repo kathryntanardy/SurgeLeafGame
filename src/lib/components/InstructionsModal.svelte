@@ -16,7 +16,7 @@
 	}
 </script>
 
-<div class="modal-backdrop" aria-hidden="false">
+<div class="modal-backdrop">
 	<div class="modal">
 		<div class="content">
 			<div class="inner">
@@ -65,8 +65,8 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		width: 35%; /* Increased proportionally */
-		height: 72%; /* Increased proportionally */
+		width: 35%;
+		height: 72%;
 		background: url('/modal_bg.png') center / 100% 100% no-repeat;
 		border-radius: 0;
 		padding: 0;
@@ -79,29 +79,28 @@
 		box-sizing: border-box;
 		height: 100%;
 		display: flex;
-		align-items: center; /* center vertically */
-		justify-content: center; /* center horizontally */
-		/* Shared width for header + picture */
+		align-items: center;
+		justify-content: center;
 		--mediaW: 28cqw;
 	}
 	.inner {
 		width: var(--mediaW);
-		padding: 0.5cqh 0.5cqw; /* inner padding */
+		padding: 0.5cqh 0.5cqw;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 2cqh;
 		max-height: 100%;
-		overflow: hidden; /* scroll inner if content exceeds modal height */
+		overflow: hidden;
 	}
 	.header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between; /* title left, button right */
+		justify-content: space-between;
 		gap: 1cqw;
 		width: 100%;
-		flex-wrap: wrap; /* keep visible on very narrow widths */
+		flex-wrap: wrap;
 	}
 	.title {
 		margin: 0;
@@ -167,7 +166,7 @@
 		width: 3.5cqw;
 		height: 1.8cqw;
 		padding: 0;
-		margin: 0 -0.5cqw; /* Negative horizontal margin to overlap */
+		margin: 0 -0.5cqw;
 		align-items: center;
 		gap: 0;
 		background: transparent;
@@ -232,7 +231,7 @@
 		}
 
 		.nav-btn {
-			margin: 0 0.5cqw; /* Negative horizontal margin to overlap */
+			margin: 0 0.5cqw;
 		}
 
 		.pagination-dot {

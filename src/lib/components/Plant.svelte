@@ -10,7 +10,6 @@
 	};
 	export let plant: PlantMeta;
 	export let bucketState: Stock;
-	// Base position typically inherited from the corresponding bucket (left/top in %)
 	export let basePosition: { left: string; top: string } | null = null;
 	const dispatch = createEventDispatcher();
 	$: isAvailable = bucketState === Stock.Available;
@@ -42,7 +41,7 @@
 		position: absolute;
 		display: block;
 		height: auto;
-		z-index: 1; /* below buckets (z-index:2) */
+		z-index: 1;
 		cursor: pointer;
 		transition:
 			transform 0.15s ease,
@@ -56,7 +55,6 @@
 	.plant.overPlant2 {
 		z-index: 9;
 	}
-	/* plant4 tap overlay sits above plant2/buckets but is invisible */
 
 	.plant:hover {
 		filter: brightness(1.05);

@@ -10,20 +10,8 @@
 
 <div class="center-strip">
 	<div class="hud">
-		<HudBox
-			mode="display"
-			iconSrc="/timeIcon.png"
-			value={timerText}
-			leftIconWidth="0.8vw"
-			leftIconHeight="0.8vw"
-		/>
-		<HudBox
-			mode="display"
-			iconSrc="/leafIcon.png"
-			value={$scoreStore}
-			leftIconWidth="1.04vw"
-			leftIconHeight="1.04vw"
-		/>
+		<HudBox mode="display" iconSrc="/timeIcon.png" value={timerText} />
+		<HudBox mode="display" iconSrc="/leafIcon.png" value={$scoreStore} />
 		{#if $gamePhase === 'pre'}
 			<HudBox mode="button" onClick={onStartGame} />
 		{:else if $gamePhase === 'ended'}

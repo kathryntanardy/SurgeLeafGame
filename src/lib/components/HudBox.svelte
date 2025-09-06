@@ -9,43 +9,19 @@
 	// Visual assets
 	export let containerSrc: string = '/container.png'; // box background (from /static)
 	export let iconSrc: string | undefined = undefined; // left icon in display mode
-
-	// Sizes (viewport-relative).
-	export let leftIconWidth: string | undefined = undefined;
-	export let leftIconHeight: string | undefined = undefined;
-	export let buttonWidth: string = '5.6vw';
-	export let buttonHeight: string = '2.2vh';
-
-	const defaultLeftW = '1.2cqw';
-	const defaultLeftH = '1.2cqw';
-	const effectiveLeftW = leftIconWidth ?? defaultLeftW;
-	const effectiveLeftH = leftIconHeight ?? defaultLeftH;
 </script>
 
 {#if mode === 'button'}
 	<!-- Static background box; only the inner image button is clickable -->
 	<div class="hud-box" style="background-image: url({containerSrc});">
-		<button
-			type="button"
-			class="icon-button"
-			style:width={buttonWidth}
-			style:height={buttonHeight}
-			on:click={onClick}
-		>
-			<img src="/view_shop.png" alt="" class="icon" aria-hidden="true" />
+		<button type="button" class="icon-button" on:click={onClick}>
+			<img src="/view_shop.png" alt="" class="icon" />
 		</button>
 	</div>
 {:else}
 	<div class="hud-box" style="background-image: url({containerSrc});">
 		{#if iconSrc}
-			<img
-				src={iconSrc}
-				alt=""
-				class="left-icon"
-				aria-hidden="true"
-				style:width={effectiveLeftW}
-				style:height={effectiveLeftH}
-			/>
+			<img src={iconSrc} alt="" class="left-icon" />
 		{/if}
 		{#if value !== undefined}
 			<span class="value" aria-live="polite">{value}</span>
@@ -84,6 +60,8 @@
 		padding: 0;
 		cursor: pointer;
 		display: inline-flex;
+		width: 5.6vw;
+		height: 2.2vh;
 		align-items: center;
 		justify-content: center;
 		transition:
@@ -100,11 +78,10 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
-		pointer-events: auto; /* ensure the button handles events */
+		pointer-events: auto;
 	}
 
 	.value {
-		/* 12px on 1920x1080 -> 0.625vw or ~1.11vh */
 		font-size: max(0.625vw, 1.11vh);
 		color: #8a6f6a;
 		font-family: 'Catriel', catriel, sans-serif;
@@ -114,7 +91,6 @@
 
 	@container (max-width: 640px) {
 		.hud-box {
-			/* 181px x 43px -> 9.43vw x 3.98vh */
 			width: 25vw;
 			height: 4vh;
 			background-size: 100% 100%;
@@ -141,7 +117,6 @@
 
 	@container (max-width: 400px) {
 		.hud-box {
-			/* 181px x 43px -> 9.43vw x 3.98vh */
 			width: 25vw;
 			height: 5vh;
 			background-size: 100% 100%;

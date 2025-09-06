@@ -105,9 +105,9 @@ export const bucketData: BucketData[] = [
         id: 5,
         key: 'bucket5',
         images: {
-            default: '/bucket5/default.png',
-            available: '/bucket5/available.png',
-            outOfStock: '/bucket5/available.png'
+            default: '/bucket2/default.png',
+            available: '/bucket2/available.png',
+            outOfStock: '/bucket2/available.png'
         },
         altText: 'Bucket 5',
         position: {
@@ -125,9 +125,9 @@ export const bucketData: BucketData[] = [
         id: 6,
         key: 'bucket6',
         images: {
-            default: '/bucket5/default.png',
-            available: '/bucket5/available.png',
-            outOfStock: '/bucket5/available.png'
+            default: '/bucket2/default.png',
+            available: '/bucket2/available.png',
+            outOfStock: '/bucket2/available.png'
         },
         altText: 'Bucket 6',
         position: {
@@ -143,5 +143,4 @@ export const bucketData: BucketData[] = [
     }
 ];
 
-// Export item keys for game logic (e.g., order generation)
 export const itemKeys: string[] = bucketData.map(b => b.key);

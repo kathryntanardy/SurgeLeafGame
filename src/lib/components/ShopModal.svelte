@@ -21,15 +21,6 @@
 	function close() {
 		dispatch('close');
 	}
-
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') close();
-	}
-
-	onMount(() => {
-		document.addEventListener('keydown', onKeydown);
-		return () => document.removeEventListener('keydown', onKeydown);
-	});
 </script>
 
 <div class="backdrop" on:click={close}></div>
@@ -73,9 +64,6 @@
 									game.unlockPlant(key);
 							}}
 						>
-							<!-- <span>
-								{p?.state === Stock.Default ? 'Unlock' : 'Restock'}
-							</span> -->
 						</button>
 					</div>
 				{/each}
@@ -90,7 +78,7 @@
 		position: absolute;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
-		z-index: 100;
+		z-index: 200;
 	}
 
 	/* Root centers the dialog above the backdrop */
@@ -100,10 +88,9 @@
 		display: grid;
 		justify-items: center;
 		align-items: start;
-		z-index: 101;
+		z-index: 201;
 	}
 
-	/* Dialog panel: absolute within background; sizes as % of background */
 	.dialog {
 		position: absolute;
 		left: 50%;
@@ -118,11 +105,10 @@
 		border-radius: 8px;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 		display: grid;
-		place-items: center; /* center inner panel */
+		place-items: center;
 		overflow: hidden;
 	}
 
-	/* Center inner panel sized as % of dialog (438/600 ≈ 73%; 515/650 ≈ 79.2%) */
 	.inner {
 		width: 73%;
 		height: 79.2%;

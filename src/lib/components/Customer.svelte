@@ -4,60 +4,33 @@
 	import { createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
 
-	// Default/base image shown when no state mapping applies
-	export let imageSrc: string = '/customer.png';
 	export let alt: string = 'Customer';
-
-	// Size (viewport-relative preferred)
-	export let imageWidth: string = '8%';
-
-	// Absolute positioning within parent
-	export let left: string | undefined = undefined;
-	export let top: string | undefined = undefined;
-
-	// Flip image horizontally if true
+	export let left: string;
+	export let top: string;
+	export let imageWidth: string;
 	export let mirror: boolean = false;
 
-	// Current visual state
 	export let state: OrderStatus = OrderStatus.InProgress;
-	// Optional timer/hurry indicators
-	export let timerRatio: number | undefined = undefined; // 1..0 remaining
+	export let timerRatio: number | undefined = undefined;
 	export let hurry: boolean | undefined = undefined;
 
-	// Order text (simple, text-only for now)
-	export let orderText: string = 'worm x2, tomato x1';
-	// Optional: rich items to render icons instead of text
+	export let orderText: string = '';
 	export let orderItems: Record<string, number> | undefined = undefined;
-	// Optional thanks amount to render in the same order bubble position after success
 	export let thanksAmount: number | null = null;
 
-	// Gap between bottom of order and top of customer (use vw only; 1vh ≈ 0.5625vw at 16:9)
-	export let orderGapY: string = '5%';
+	export let orderWidth: string | undefined = undefined;
+	export let orderTransform: string | undefined = undefined;
 
-	// Anchor order bubble to customer using translate, so it shrinks from top to bottom
-	// We place the order at customer top and translate upward by gap
-	const translateY = `calc(-100% - ${orderGapY})`;
-	$: orderTop = top; // top is the customer's top; translation handles the gap
-
-	// Center order horizontally over the customer using the customer's width
-	// left + (imageWidth / 2), and let Order center itself via translateX(-50%)
-	$: orderLeftCenter = left && imageWidth ? `calc(${left} + (${imageWidth}) / 2)` : left;
-	$: orderTranslate = `translate(-50%, ${translateY})`;
-
-	const defaultMap: Record<OrderStatus, string> = {
+	const customerImages: Record<OrderStatus, string> = {
 		[OrderStatus.InProgress]: '/customer/default.png',
 		[OrderStatus.Success]: '/customer/success.png',
 		[OrderStatus.Fail]: '/customer/failure.png'
 	};
 
-	// Use unhappy face pre-emptively when hurrying
-	$: resolvedSrc =
-		state === OrderStatus.InProgress && hurry
-			? '/customer/failure.png'
-			: (defaultMap[state] ?? imageSrc);
+	$: customerSrc =
+		state === OrderStatus.InProgress && hurry ? '/customer/failure.png' : customerImages[state];
 
-	// Icon mapping for order items
-	const iconByKey: Record<string, string> = {
+	const plantIcons: Record<string, string> = {
 		plant1: '/icons/monstera.png',
 		plant2: '/icons/vine.png',
 		plant3: '/icons/tomato.png',
@@ -66,78 +39,51 @@
 		plant6: '/icons/dandelion.png'
 	};
 
-	export let orderWidth: string | undefined = undefined;
-	export let orderTransform: string | undefined = undefined;
-
-	$: thanksAmountFontSize = (() => {
-		if (thanksAmount == null) return '1.2cqw';
-		const amountStr = thanksAmount.toString();
-		const digitCount = amountStr.length;
-
-		if (digitCount <= 3) return '1.2cqw';
-		if (digitCount <= 4) return '1.0cqw';
-		if (digitCount <= 5) return '0.8cqw';
-		if (digitCount <= 6) return '0.6cqw';
-		return '0.5cqw';
-	})();
-
-	$: thanksAmountIconSize = (() => {
-		if (thanksAmount == null) return '1cqw';
-		const amountStr = thanksAmount.toString();
-		const digitCount = amountStr.length;
-
-		if (digitCount <= 3) return '1cqw';
-		if (digitCount <= 5) return '0.6cqw';
-		if (digitCount <= 6) return '0.5cqw';
-		return '0.4cqw';
-	})();
+	$: plantOrders = orderItems ? Object.keys(orderItems).length : 1;
+	$: scale = plantOrders === 1 ? 1.0 : plantOrders === 2 ? 1.0 : 0.95;
 </script>
 
-<!-- Order bubble/card: show normal order while in progress; show Thanks when provided -->
 {#if thanksAmount != null}
 	<Order
-		left={orderLeftCenter}
-		top={orderTop}
-		translate={orderTransform ?? orderTranslate}
+		left={`calc(${left} + (${imageWidth}) / 2)`}
+		{top}
+		translate={orderTransform ?? 'translate(-50%, calc(-100% - 5%))'}
 		progress={undefined}
 		style={orderWidth ? `--orderW:${orderWidth}` : undefined}
 	>
 		<div class="thanks-wrap">
 			<div class="thanks-title">Thanks!</div>
-			<div class="thanks-amount" style="font-size: {thanksAmountFontSize}">
-				<img
-					src="/leafIcon.png"
-					alt=""
-					style="width: {thanksAmountIconSize}; height: {thanksAmountIconSize}"
-				/>
+			<div class="thanks-amount">
+				<img src="/leafIcon.png" alt="" class="thanks-icon" />
 				{thanksAmount}
 			</div>
 		</div>
 	</Order>
 {:else if state === OrderStatus.InProgress}
 	<Order
-		left={orderLeftCenter}
-		top={orderTop}
-		translate={orderTransform ?? orderTranslate}
+		left={`calc(${left} + (${imageWidth}) / 2)`}
+		{top}
+		translate={orderTransform ?? 'translate(-50%, calc(-100% - 5%))'}
 		progress={timerRatio}
 		style={orderWidth ? `--orderW:${orderWidth}` : undefined}
 	>
 		{#if orderItems}
-			<div class="order-icons">
+			<div class="order-icons" style="--content-scale: {scale};">
 				{#each Object.entries(orderItems) as [k, qty]}
 					<div class="order-icon-item">
-						<img src={iconByKey[k]} alt={k} class="order-icon" draggable="false" />
+						<img src={plantIcons[k]} alt={k} class="order-icon" draggable="false" />
 						<span class="order-qty">x{qty}</span>
 					</div>
 				{/each}
 			</div>
 		{:else}
-			{orderText}
+			<div class="order-text" style="--content-scale: {scale};">
+				{orderText}
+			</div>
 		{/if}
 	</Order>
 {/if}
 
-<!-- Invisible hitbox above plants to keep customer clickable -->
 <div
 	class="customer-hit"
 	style:left
@@ -155,7 +101,7 @@
 	on:click={() => dispatch('click')}
 >
 	<img
-		src={resolvedSrc}
+		src={customerSrc}
 		{alt}
 		class="customer-img"
 		class:mirrored={mirror}
@@ -186,11 +132,10 @@
 	.order-icons {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px 6px;
+		gap: calc(6px * var(--content-scale, 1)) calc(8px * var(--content-scale, 1));
 		align-items: center;
 		justify-content: center;
-		/* Use vw only: 35px ~= 1.8229166667vw @1920w */
-		--iconSize: 1.8229166667vw;
+		--iconSize: calc(3vh * var(--content-scale, 1));
 	}
 	.order-icon-item {
 		display: inline-flex;
@@ -207,6 +152,13 @@
 	.order-qty {
 		color: #8a6f6a;
 		line-height: 1;
+		font-size: calc(1.2vh * var(--content-scale, 1));
+	}
+
+	.order-text {
+		font-size: calc(1.2vh * var(--content-scale, 1));
+		text-align: center;
+		line-height: 1.3;
 	}
 	.thanks-wrap {
 		display: grid;
@@ -214,7 +166,7 @@
 		place-items: center;
 	}
 	.thanks-title {
-		font-size: 1cqw;
+		font-size: 1.8vh;
 		font-weight: 400;
 	}
 	.thanks-amount {
@@ -222,29 +174,11 @@
 		align-items: center;
 		gap: 0.3rem;
 		font-weight: 500;
-		/* font-size is now set dynamically via inline style */
+		font-size: 1.8vh;
 	}
 
-	@container (max-width: 640px) {
-		.customer {
-			width: 18% !important;
-			z-index: 0;
-		}
-
-		.customer-hit {
-			width: 18% !important;
-			z-index: 200;
-		}
-	}
-	@container (max-width: 400px) {
-		.customer {
-			width: 20% !important;
-			z-index: 0;
-		}
-
-		.customer-hit {
-			width: 20% !important;
-			z-index: 200;
-		}
+	.thanks-icon {
+		width: 1.5vh;
+		height: 1.5vh;
 	}
 </style>

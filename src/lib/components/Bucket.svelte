@@ -8,7 +8,7 @@
 
 	export let bucket: BucketData;
 
-	// Plant/bucket state now driven by plantsStore (runtime)
+
 	$: bucketNum = Number(bucket.key.replace('bucket', ''));
 	$: matchingPlant = plantData.find((p) => p.id === bucketNum);
 	$: plantState = matchingPlant ? $plantsStore[matchingPlant.key]?.state : undefined;
@@ -22,7 +22,7 @@
 			: bucket.images.outOfStock;
 </script>
 
-<!-- Always render the bucket image (non-clickable) -->
+
 <img
 	src={imgSrc}
 	alt={bucket.altText}

@@ -3,7 +3,7 @@
 	export let onRestart: (() => void) | undefined;
 </script>
 
-<div class="modal-backdrop" aria-hidden="false">
+<div class="modal-backdrop">
 	<div class="modal">
 		<div class="content">
 			<div class="inner">

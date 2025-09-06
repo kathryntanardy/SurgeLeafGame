@@ -4,7 +4,7 @@ export const plantData = [
     {
         id: 1,
         key: 'plant1',
-        imageSrc: '/bucket1/plant.png',
+        imageSrc: '/plant/plant1.png',
         altText: 'Monstera',
         // width uses vw; left/top inherit from bucket; adjust via transform
         position: {
@@ -20,13 +20,13 @@ export const plantData = [
     {
         id: 2,
         key: 'plant2',
-        imageSrc: '/bucket2/plant.png',
+        imageSrc: '/plant/plant2.png',
         altText: 'River Vine',
         position: {
             width: '50%',
             transform: 'translate(-40%, -42%)'
         },
-         mobilePosition: {
+        mobilePosition: {
             width: '100%',
             transform: 'translate(-40%, -42%)'
         },
@@ -35,7 +35,7 @@ export const plantData = [
     {
         id: 3,
         key: 'plant3',
-        imageSrc: '/bucket3/plant.png',
+        imageSrc: '/plant/plant3.png',
         altText: 'Tomato',
         position: {
             width: '6.5%',
@@ -50,7 +50,7 @@ export const plantData = [
     {
         id: 4,
         key: 'plant4',
-        imageSrc: '/bucket4/plant.png',
+        imageSrc: '/plant/plant4.png',
         altText: 'Staff Stick',
         position: {
             width: '6%',
@@ -65,7 +65,7 @@ export const plantData = [
     {
         id: 5,
         key: 'plant5',
-        imageSrc: '/bucket5/plant.png',
+        imageSrc: '/plant/plant5.png',
         altText: 'Mega Carrot',
         position: {
             width: '7%',
@@ -80,7 +80,7 @@ export const plantData = [
     {
         id: 6,
         key: 'plant6',
-        imageSrc: '/bucket6/plant.png',
+        imageSrc: '/plant/plant6.png',
         altText: 'Giant Dandelion',
         position: {
             width: '11%',

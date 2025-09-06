@@ -10,33 +10,28 @@ export const scoreStore = writable(0);
 export const queuedOrdersStore = writable<Order[]>([]);
 export const currentOrderStore = writable<Order>({});
 
-// Game session (pre → running → ended)
 export type GamePhase = 'pre' | 'running' | 'ended';
 export const gamePhase = writable<GamePhase>('pre');
 export const gameEndsAt = writable<number | null>(null);
 
-// Stock: Availability of plants 
 export enum Stock {
     Default = 'default',
     Available = 'available',
     OutOfStock = 'out_of_stock'
 }
 
-// Order lifecycle for customers
 export enum OrderStatus {
     InProgress = 'in_progress',
     Success = 'success',
     Fail = 'fail'
 }
 
-// Rich order entity per customer
 export type OrderEntity = {
-    id: number;                 // stable id
-    requestedPlants: Order;     // required items (target)
-    deliveredPlants: Order;     // delivered so far
-    status: OrderStatus;        // in_progress | success | fail
-    reward?: number;            // optional completion reward
-    // Timer-related (optional, enabled when ENABLE_ORDER_TIMERS)
+    id: number;
+    requestedPlants: Order;
+    deliveredPlants: Order;
+    status: OrderStatus;
+    reward?: number;
     createdAtMs?: number;
     expiresAtMs?: number;
     totalDurationMs?: number;
@@ -52,17 +47,17 @@ export const displaySlots = writable<(number | null)[]>([null, null, null]);
 // Temp store for selected plant for delivery
 export const tempSelectedPlant = writable<string | null>(null); // pending plant key
 
-// (QTE removed)
-// QTE session store (guarded by ENABLE_QTE; not yet wired into UI)
+
 export type ActiveQTESession = {
+    id: string; // unique identifier for this session
     plantKey: string;
     sizeCqw: number;
     leftPct: string; // percent string e.g. '63%'
     topPct: string;  // percent string e.g. '79%'
     transformCss?: string; // carried-through transform to match plant centering
     config: QTEConfig;
-} | null;
-export const activeQTESession = writable<ActiveQTESession>(null);
+};
+export const activeQTESessions = writable<ActiveQTESession[]>([]);
 
 
 export type ThanksToast = { id: number; amount: number; slotIdx: number; createdAtMs: number };
@@ -75,11 +70,11 @@ export type plantInfo = {
     points: number;
     bucketKey: string;
     state: Stock;
-    stockCount: number; // remaining deliveries before OutOfStock (0 when not Available)
-    scoreMultiplier?: number; // persists until next restock/unlock
+    count: number;
+    multiplier?: number;
 };
 
-// Initial Stocks definitions
+
 const INITIAL_STATES: Record<string, Stock> = {
     bucket1: Stock.Default,
     bucket2: Stock.Default,
@@ -96,23 +91,21 @@ export const plantArray = writable<Record<string, plantInfo>>(
             const initialState = INITIAL_STATES[bucketKey] ?? Stock.Available;
             return [
                 p.key,
-                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0, scoreMultiplier: 1 }
+                { id: p.id, key: p.key, points: p.points, bucketKey, state: initialState, count: initialState === Stock.Available ? 10 : 0, multiplier: 1 }
             ];
         })
     )
 );
 
-// Back-compat and canonical naming for components expecting plantsStore
 export type PlantRuntime = plantInfo;
 export const plantsStore = plantArray;
 
-// Mascot: frame state for Background rendering
+
 export type MascotFrame = 'default1' | 'default2' | 'success' | 'failure';
 export const mascotFrame = writable<MascotFrame>('default1');
-// Global time source used for countdowns when timers are enabled
 export const nowStore = writable<number>(Date.now());
 
-// ---- Tunable gameplay timing values ----
+
 // to control how often timer bars is updated (10 updates/sec)
 export const NOW_TICK_MS = 100;
 // Default duration for an order before it fails (not yet wired into logic)
@@ -144,23 +137,18 @@ const DEFAULT_QTE_CONFIG: QTEConfig = {
 export class LeafGame {
     private orderSeq: number = 1;
     private unlockedKeys: string[] = [];
-    // Mascot internals
     private mascotTimerId: number | undefined = undefined;
     private mascotSuccessTimeoutId: number | undefined = undefined;
-    // Timer ticker
     private nowTimerId: number | undefined = undefined;
 
     constructor() {
-        // Initialize unlocked keys from plants that are currently Available
         const plants = Object.values(get(plantArray));
         this.unlockedKeys = plants.filter((p) => p.state === Stock.Available).map((p) => p.key);
 
-        // Periodically try to add orders while the game is running
         setInterval(() => {
             this.addOrder();
-        }, 3000);
+        }, 2000);
 
-        // Start global time ticker for order timers
         if (!this.nowTimerId) {
             this.nowTimerId = (setInterval(() => {
                 nowStore.set(Date.now());
@@ -169,14 +157,12 @@ export class LeafGame {
             }, NOW_TICK_MS) as unknown) as number;
         }
 
-        // Start mascot idle animation (toggle frames while not in success)
         this.startMascotIdle();
     }
 
     addOrder(): void {
-        // Only generate orders during active session
         if (get(gamePhase) !== 'running') return;
-        // Require a free slot
+
         const slots = get(displaySlots);
         const freeIdx = slots.indexOf(null);
         if (freeIdx === -1) return;
@@ -184,10 +170,19 @@ export class LeafGame {
         if (this.unlockedKeys.length === 0) return;
 
         const items: Order = {};
-        for (let i = 0; i < 5; i++) {
-            if (Math.random() > 0.5) {
+
+        const maxTypes = 3;
+        const selectedTypes = new Set<string>();
+
+        for (let i = 0; i < 10; i++) {
+            if (selectedTypes.size >= maxTypes) break;
+
+            if (Math.random() > 0.4) {
                 const item = this.unlockedKeys[Math.floor(Math.random() * this.unlockedKeys.length)];
-                items[item] = (items[item] ?? 0) + 1;
+                if (!selectedTypes.has(item)) {
+                    selectedTypes.add(item);
+                    items[item] = (items[item] ?? 0) + Math.floor(Math.random() * 3) + 1; // 1-3 of each type
+                }
             }
         }
 
@@ -218,31 +213,17 @@ export class LeafGame {
         });
     }
 
-    // Mascot API
+
     private startMascotIdle(): void {
         if (this.mascotTimerId) return;
         this.mascotTimerId = (setInterval(() => {
             let current: MascotFrame = get(mascotFrame);
-            if (current === 'success' || current === 'failure') return; // don't toggle while reacting
+            if (current === 'success' || current === 'failure') return;
             mascotFrame.set(current === 'default1' ? 'default2' : 'default1');
-        }, 700) as unknown) as number; // ~0.7s feels natural
+        }, 700) as unknown) as number;
     }
 
-    private stopMascotIdle(): void {
-        if (this.mascotTimerId) {
-            clearInterval(this.mascotTimerId);
-            this.mascotTimerId = undefined;
-        }
-    }
 
-    private stopNowTicker(): void {
-        if (this.nowTimerId) {
-            clearInterval(this.nowTimerId);
-            this.nowTimerId = undefined;
-        }
-    }
-
-    // Order timers: update by remaining time
     private updateTimers(): void {
 
         const now = get(nowStore);
@@ -322,9 +303,6 @@ export class LeafGame {
         }, ms) as unknown) as number;
     }
 
-    makeItem(item: string): void {
-        currentOrderStore.update((co) => ({ ...co, [item]: (co[item] ?? 0) + 1 }));
-    }
 
     submitOrder(): void {
         const q = get(queuedOrdersStore);
@@ -351,9 +329,8 @@ export class LeafGame {
         tempSelectedPlant.set(key);
     }
 
-    // (QTE removed)
-    // Derive QTE session payload for a given plant key
-    deriveQTESessionFor(plantKey: string): ActiveQTESession {
+
+    deriveQTESessionFor(plantKey: string): ActiveQTESession | null {
         const runtime = get(plantArray)[plantKey];
         const meta = plantData.find((p) => p.key === plantKey);
         if (!runtime || !meta) return null;
@@ -382,8 +359,9 @@ export class LeafGame {
         const transformCss = `translate(-50%, 0) translateY(-${approxHeightCqh - extraY}cqh)`;
         const config = cfg;
         return {
+            id: `qte-${plantKey}-${Date.now()}`, // unique identifier
             plantKey,
-            sizeCqw: widthNum, // 7% -> 7cqw
+            sizeCqw: widthNum,
             leftPct,
             topPct,
             transformCss,
@@ -391,8 +369,30 @@ export class LeafGame {
         };
     }
 
-    // Recalculate QTE position for responsive behavior
-    recalculateQTEPosition(plantKey: string): ActiveQTESession {
+
+
+    startQTESession(plantKey: string): boolean {
+        const sessions = get(activeQTESessions);
+
+        if (sessions.some(s => s.plantKey === plantKey)) return false;
+
+        if (sessions.length >= 2) return false;
+
+        const newSession = this.deriveQTESessionFor(plantKey);
+        if (newSession) {
+            activeQTESessions.update(sessions => [...sessions, newSession]);
+            return true;
+        }
+        return false;
+    }
+
+    endQTESession(plantKey: string): void {
+        activeQTESessions.update(sessions =>
+            sessions.filter(s => s.plantKey !== plantKey)
+        );
+    }
+
+    recalculateQTEPosition(plantKey: string): ActiveQTESession | null {
         return this.deriveQTESessionFor(plantKey);
     }
 
@@ -400,10 +400,8 @@ export class LeafGame {
         const bucket = bucketData.find(b => b.id === bucketId);
         if (!bucket) return '50%';
 
-        // Check if we're on mobile
         const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
 
-        // Use mobile position if available and on mobile, otherwise use desktop position
         return isMobile && bucket.mobilePosition
             ? bucket.mobilePosition.left
             : bucket.position.left;
@@ -413,16 +411,16 @@ export class LeafGame {
         const bucket = bucketData.find(b => b.id === bucketId);
         if (!bucket) return '50%';
 
-        // Check if we're on mobile
+
         const isMobile = typeof window !== 'undefined' && window.innerWidth <= 640;
 
-        // Use mobile position if available and on mobile, otherwise use desktop position
+
         return isMobile && bucket.mobilePosition
             ? bucket.mobilePosition.top
             : bucket.position.top;
     }
 
-    // Customer Click: deliver selected plant to a specific order
+
     deliverPlant(orderId: number): void {
         if (get(gamePhase) !== 'running') return;
         const key = get(tempSelectedPlant);
@@ -453,23 +451,22 @@ export class LeafGame {
             };
 
             // Decrement stock; if reaches 0, mark OutOfStock, else keep Available
-            const nextCount = Math.max(0, (plant.stockCount ?? 0) - 1);
+            const nextCount = Math.max(0, (plant.count ?? 0) - 1);
             const nextState = nextCount === 0 ? Stock.OutOfStock : Stock.Available;
-            plantArray.update((m) => ({ ...m, [key]: { ...plant, state: nextState, stockCount: nextCount } }));
+            plantArray.update((m) => ({ ...m, [key]: { ...plant, state: nextState, count: nextCount } }));
             tempSelectedPlant.set(null);
 
-            // If no more requested items, mark success and remove after 5s
             if (Object.keys(newRequested).length === 0) {
                 updated.status = OrderStatus.Success;
-                // Trigger mascot celebration briefly
+
                 this.showMascotSuccessFor();
-                // Compute order total: sum of each delivered count × plant points × current multiplier
+
                 const plantSnapshot = get(plantArray);
                 let orderTotal = 0;
                 for (const [pKey, cnt] of Object.entries(newDelivered)) {
                     const p = plantSnapshot[pKey];
                     if (!p) continue;
-                    const mult = Math.max(0, p.scoreMultiplier ?? 1);
+                    const mult = Math.max(0, p.multiplier ?? 1);
                     orderTotal += Math.round(p.points * mult) * (cnt as number);
                 }
                 // Update score only when order is fully completed
@@ -512,7 +509,7 @@ export class LeafGame {
         if (get(gamePhase) !== 'running') return;
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, count: 10, multiplier: 1 } }));
     }
 
     // Restock with multiplier persistence
@@ -521,10 +518,7 @@ export class LeafGame {
         const plant = get(plantArray)[key];
         if (!plant || plant.state !== Stock.OutOfStock) return;
         const safeMult = Number.isFinite(multiplier) ? Math.max(0, multiplier) : 1;
-        // Debug: log per-plant multiplier chosen via QTE
-        // eslint-disable-next-line no-console
-        console.log('[QTE] restock multiplier', { plantKey: key, multiplier: safeMult });
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: safeMult } }));
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, count: 10, multiplier: safeMult } }));
     }
 
     // Unlock: Default -> Available, cost = plant.points (plant 4 free)
@@ -539,8 +533,7 @@ export class LeafGame {
             if (currentScore < cost) return;
             scoreStore.update((s) => s - cost);
         }
-        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, stockCount: 10, scoreMultiplier: 1 } }));
-        // Track unlocked key for future order generation
+        plantArray.update((m) => ({ ...m, [key]: { ...plant, state: Stock.Available, count: 10, multiplier: 1 } }));
         if (!this.unlockedKeys.includes(key)) this.unlockedKeys.push(key);
     }
 
@@ -550,17 +543,21 @@ export class LeafGame {
         scoreStore.set(0);
         orderEntities.set({});
         displaySlots.set([null, null, null]);
-        // Reset all plants to their initial stock/multiplier
+        // Reset all plants to default state, except plant4 which stays available
         const initial = get(plantArray);
         const reset = Object.fromEntries(Object.values(initial).map((p) => {
-            const initialState = (INITIAL_STATES[p.bucketKey] ?? Stock.Available);
-            return [p.key, { ...p, state: initialState, stockCount: initialState === Stock.Available ? 10 : 0, scoreMultiplier: 1 }];
+            const isPlant4 = p.key === 'plant4';
+            return [p.key, {
+                ...p,
+                state: isPlant4 ? Stock.Available : Stock.Default,
+                count: isPlant4 ? 10 : 0,
+                multiplier: 1
+            }];
         }));
         plantArray.set(reset as Record<string, plantInfo>);
-        // Rebuild unlocked keys list
-        const plants = Object.values(get(plantArray));
-        this.unlockedKeys = plants.filter((p) => p.state === Stock.Available).map((p) => p.key);
-        // Start phase
+
+        this.unlockedKeys = ['plant4'];
+
         gamePhase.set('running');
         const ends = Date.now() + GAME_DURATION_MS;
         gameEndsAt.set(ends);
