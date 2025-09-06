@@ -391,6 +391,11 @@ export class LeafGame {
         };
     }
 
+    // Recalculate QTE position for responsive behavior
+    recalculateQTEPosition(plantKey: string): ActiveQTESession {
+        return this.deriveQTESessionFor(plantKey);
+    }
+
     private getBucketLeftPct(bucketId: number): string {
         const bucket = bucketData.find(b => b.id === bucketId);
         if (!bucket) return '50%';
@@ -447,10 +452,6 @@ export class LeafGame {
                 deliveredPlants: newDelivered,
             };
 
-            // Adjust score with persistent multiplier
-            const multiplier = Math.max(0, plant.scoreMultiplier ?? 1);
-            const awarded = Math.round(plant.points * multiplier);
-            scoreStore.update((s) => s + awarded);
             // Decrement stock; if reaches 0, mark OutOfStock, else keep Available
             const nextCount = Math.max(0, (plant.stockCount ?? 0) - 1);
             const nextState = nextCount === 0 ? Stock.OutOfStock : Stock.Available;
@@ -471,6 +472,8 @@ export class LeafGame {
                     const mult = Math.max(0, p.scoreMultiplier ?? 1);
                     orderTotal += Math.round(p.points * mult) * (cnt as number);
                 }
+                // Update score only when order is fully completed
+                scoreStore.update((s) => s + orderTotal);
                 // Emit thanks toast near this customer slot with the computed order total
                 const slotsSnapshot = get(displaySlots);
                 const slotIdx = slotsSnapshot.indexOf(orderId);

@@ -68,6 +68,29 @@
 
 	export let orderWidth: string | undefined = undefined;
 	export let orderTransform: string | undefined = undefined;
+
+	$: thanksAmountFontSize = (() => {
+		if (thanksAmount == null) return '1.2cqw';
+		const amountStr = thanksAmount.toString();
+		const digitCount = amountStr.length;
+
+		if (digitCount <= 3) return '1.2cqw';
+		if (digitCount <= 4) return '1.0cqw';
+		if (digitCount <= 5) return '0.8cqw';
+		if (digitCount <= 6) return '0.6cqw';
+		return '0.5cqw';
+	})();
+
+	$: thanksAmountIconSize = (() => {
+		if (thanksAmount == null) return '1cqw';
+		const amountStr = thanksAmount.toString();
+		const digitCount = amountStr.length;
+
+		if (digitCount <= 3) return '1cqw';
+		if (digitCount <= 5) return '0.6cqw';
+		if (digitCount <= 6) return '0.5cqw';
+		return '0.4cqw';
+	})();
 </script>
 
 <!-- Order bubble/card: show normal order while in progress; show Thanks when provided -->
@@ -81,7 +104,14 @@
 	>
 		<div class="thanks-wrap">
 			<div class="thanks-title">Thanks!</div>
-			<div class="thanks-amount"><img src="/leafIcon.png" alt="" /> {thanksAmount}</div>
+			<div class="thanks-amount" style="font-size: {thanksAmountFontSize}">
+				<img
+					src="/leafIcon.png"
+					alt=""
+					style="width: {thanksAmountIconSize}; height: {thanksAmountIconSize}"
+				/>
+				{thanksAmount}
+			</div>
 		</div>
 	</Order>
 {:else if state === OrderStatus.InProgress}
@@ -191,12 +221,8 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		font-size: 1.2cqw;
 		font-weight: 500;
-	}
-	.thanks-amount img {
-		width: 1cqw;
-		height: 1cqw;
+		/* font-size is now set dynamically via inline style */
 	}
 
 	@container (max-width: 640px) {

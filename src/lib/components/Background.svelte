@@ -23,6 +23,7 @@
 		gameEndsAt,
 		scoreStore
 	} from '$lib/game/LeafGame';
+	import { derived } from 'svelte/store';
 	import { Stock } from '$lib/game/LeafGame';
 	import { customerSlots } from '$lib/game/customerData';
 	import InstructionsModal from './InstructionsModal.svelte';
@@ -35,6 +36,16 @@
 	function onCloseModal() {
 		shopOpen = false;
 	}
+
+	// Reactive QTE session that recalculates position when layout changes
+	const reactiveQTESession = derived(
+		[activeQTESession, isMobile, isNarrow],
+		([session, mobile, narrow]) => {
+			if (!session) return null;
+			// Recalculate position when layout changes
+			return game.recalculateQTEPosition(session.plantKey);
+		}
+	);
 
 	function onRestockFromShop(e: CustomEvent<{ plantKey: string }>) {
 		const { plantKey } = e.detail;
@@ -58,16 +69,17 @@
 			.map(([k, qty]) => `${k} x${qty}`)
 			.join(', ');
 
-	const pickPos = (i: number) => {
+	// Reactive functions that update when layout changes
+	$: pickPos = (i: number) => {
 		const slot = customerSlots[i];
 		if ($isNarrow) return slot.mobileNarrowPosition ?? slot.mobilePosition ?? slot.position;
 		if ($isMobile) return slot.mobilePosition ?? slot.position;
 		return slot.position;
 	};
-	const leftFor = (i: number) => pickPos(i).left;
-	const topFor = (i: number) => pickPos(i).top;
-	const widthFor = (i: number) => pickPos(i).width ?? '8%';
-	const gapFor = (i: number) => {
+	$: leftFor = (i: number) => pickPos(i).left;
+	$: topFor = (i: number) => pickPos(i).top;
+	$: widthFor = (i: number) => pickPos(i).width ?? '8%';
+	$: gapFor = (i: number) => {
 		const slot = customerSlots[i];
 		if ($isNarrow)
 			return slot.mobileNarrowOrderGapY ?? slot.mobileOrderGapY ?? slot.orderGapY ?? '5%';
@@ -122,14 +134,14 @@
 
 	// function someFunction() {}
 
-	const orderWidthFor = (i: number) => {
+	$: orderWidthFor = (i: number) => {
 		const slot = customerSlots[i];
 		if ($isNarrow) return slot.mobileNarrowOrderWidth ?? slot.mobileOrderWidth ?? slot.orderWidth;
 		if ($isMobile) return slot.mobileOrderWidth ?? slot.orderWidth;
 		return slot.orderWidth;
 	};
 
-	const orderTransformFor = (i: number, baseTranslate: string) => {
+	$: orderTransformFor = (i: number, baseTranslate: string) => {
 		const slot = customerSlots[i];
 		const t = $isNarrow
 			? (slot.mobileNarrowOrderTransform ?? slot.mobileOrderTransform ?? slot.orderTransform)
@@ -156,6 +168,9 @@
 	{:else}
 		<img src="/background.png" alt="Background" class="background-image" />
 	{/if}
+
+	<!-- Rays overlay -->
+	<img src="/shop_restock/rays.png" alt="" class="rays" aria-hidden="true" />
 
 	<!-- Vignette overlay -->
 	<div class="vignette" aria-hidden="true"></div>
@@ -225,23 +240,23 @@
 		<EndingModal score={$scoreStore} onRestart={() => game.startGame()} />
 	{/if}
 
-	{#if ENABLE_QTE && $activeQTESession}
+	{#if ENABLE_QTE && $reactiveQTESession}
 		<!-- Dimmer to block clicks elsewhere while QTE is active -->
 		<div class="qte-dimmer" aria-hidden="true"></div>
 		<!-- QTE overlay centered using plant's left/top and transform -->
 		<div
 			class="qte-overlay"
-			style="left: {$activeQTESession.leftPct}; top: {$activeQTESession.topPct}; transform: {$activeQTESession.transformCss ??
+			style="left: {$reactiveQTESession.leftPct}; top: {$reactiveQTESession.topPct}; transform: {$reactiveQTESession.transformCss ??
 				'none'}"
 		>
 			<QTE
-				config={$activeQTESession.config}
+				config={$reactiveQTESession.config}
 				attempts={3}
 				onQTE={() => {}}
 				onDone={(successes) => {
 					const s = Math.max(0, Math.min(3, Number(successes) || 0));
 					const multiplier = s === 0 ? 0.5 : s === 1 ? 1.0 : s === 2 ? 1.5 : 3.0;
-					const plantKey = $activeQTESession?.plantKey;
+					const plantKey = $reactiveQTESession?.plantKey;
 					if (plantKey) game.restockPlantWithMultiplier(plantKey, multiplier);
 					activeQTESession.set(null);
 				}}
@@ -271,6 +286,15 @@
 		top: 0;
 		left: 0;
 		z-index: 0;
+	}
+
+	.rays {
+		position: absolute;
+		left: 50%;
+		top: 0;
+		transform: translateX(-50%);
+		z-index: 1;
+		pointer-events: none;
 	}
 
 	.vignette {
